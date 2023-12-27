@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Crystalix007/semantic-sensei/backend/schema/migrations"
@@ -39,7 +40,7 @@ func (d Database) Migrate(ctx context.Context) error {
 		)
 	}
 
-	if err := migrator.Up(); err != nil {
+	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf(
 			"storage: error running migrations: %w",
 			err,

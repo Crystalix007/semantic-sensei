@@ -27,6 +27,25 @@ func (d Database) CreateProject(ctx context.Context, p Project) (int64, error) {
 	return id, nil
 }
 
+// GetProject returns the project with the provided ID.
+func (d Database) GetProject(ctx context.Context, id int64) (*Project, error) {
+	var p Project
+
+	err := d.db.QueryRowContext(ctx, `
+		SELECT id, name, description, created_at
+		FROM projects
+		WHERE id = $1
+	`, id).Scan(&p.ID, &p.Name, &p.Description, &p.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting project: %w",
+			err,
+		)
+	}
+
+	return &p, nil
+}
+
 // UpdateProject updates the project with the provided ID with the provided
 // values.
 func (d Database) UpdateProject(ctx context.Context, p Project) error {
@@ -93,6 +112,33 @@ func (d Database) CreateClassificationTask(ctx context.Context, ct Classificatio
 	return id, nil
 }
 
+// GetClassificationTask returns the classification task with the provided ID.
+func (d Database) GetClassificationTask(ctx context.Context, id int64) (*ClassificationTask, error) {
+	var ct ClassificationTask
+
+	err := d.db.QueryRowContext(ctx, `
+		SELECT id, project_id, llm_input, llm_output, created_at, embedding, label_id
+		FROM classification_tasks
+		WHERE id = $1
+	`, id).Scan(
+		&ct.ID,
+		&ct.ProjectID,
+		&ct.LLMInput,
+		&ct.LLMOutput,
+		&ct.CreatedAt,
+		&ct.Embedding,
+		&ct.LabelID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting classification task: %w",
+			err,
+		)
+	}
+
+	return &ct, nil
+}
+
 // UpdateClassificationTask updates the classification task with the provided ID
 // with the provided values.
 func (d Database) UpdateClassificationTask(ctx context.Context, ct ClassificationTask) error {
@@ -148,6 +194,26 @@ func (d Database) CreateClassificationTaskLabel(ctx context.Context, ctl Classif
 	}
 
 	return id, nil
+}
+
+// GetClassificationTaskLabel returns the classification task label with the
+// provided ID.
+func (d Database) GetClassificationTaskLabel(ctx context.Context, id int64) (*ClassificationTaskLabel, error) {
+	var ctl ClassificationTaskLabel
+
+	err := d.db.QueryRowContext(ctx, `
+		SELECT id, project_id, label, created_at
+		FROM classification_task_labels
+		WHERE id = $1
+	`, id).Scan(&ctl.ID, &ctl.ProjectID, &ctl.Label, &ctl.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting classification task label: %w",
+			err,
+		)
+	}
+
+	return &ctl, nil
 }
 
 // UpdateClassificationTaskLabel updates the classification task label with the

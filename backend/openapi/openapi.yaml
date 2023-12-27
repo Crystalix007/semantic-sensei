@@ -4,4 +4,72 @@ info:
   version: "1.0"
 servers:
   - url: http://localhost:8080/api/
-paths: {}
+
+paths:
+  /project:
+    post:
+      description: "Creates a new project"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProject"
+      responses:
+        201:
+          description: "The created project"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+  /project/{id}:
+    get:
+      description: "Gets the project with the given id"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+      responses:
+        200:
+          description: "The project with the given id"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        404:
+          description: "The project with the given id does not exist"
+
+components:
+  schemas:
+    CreateProject:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+        - description
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          x-go-type: int64
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - description
+        - created_at

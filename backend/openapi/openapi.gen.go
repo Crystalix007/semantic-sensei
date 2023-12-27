@@ -4,20 +4,57 @@
 package openapi
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// CreateProject defines model for CreateProject.
+type CreateProject struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+}
+
+// Project defines model for Project.
+type Project struct {
+	CreatedAt   time.Time `json:"created_at"`
+	Description string    `json:"description"`
+	Id          int64     `json:"id"`
+	Name        string    `json:"name"`
+}
+
+// PostProjectJSONRequestBody defines body for PostProject for application/json ContentType.
+type PostProjectJSONRequestBody = CreateProject
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (POST /project)
+	PostProject(w http.ResponseWriter, r *http.Request)
+
+	// (GET /project/{id})
+	GetProjectId(w http.ResponseWriter, r *http.Request, id int64)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// (POST /project)
+func (_ Unimplemented) PostProject(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /project/{id})
+func (_ Unimplemented) GetProjectId(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
@@ -27,6 +64,47 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// PostProject operation middleware
+func (siw *ServerInterfaceWrapper) PostProject(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostProject(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetProjectId operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 type UnescapedCookieParamError struct {
 	ParamName string
@@ -135,12 +213,72 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
+	wrapper := ServerInterfaceWrapper{
+		Handler:            si,
+		HandlerMiddlewares: options.Middlewares,
+		ErrorHandlerFunc:   options.ErrorHandlerFunc,
+	}
+
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/project", wrapper.PostProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/project/{id}", wrapper.GetProjectId)
+	})
 
 	return r
 }
 
+type PostProjectRequestObject struct {
+	Body *PostProjectJSONRequestBody
+}
+
+type PostProjectResponseObject interface {
+	VisitPostProjectResponse(w http.ResponseWriter) error
+}
+
+type PostProject201JSONResponse Project
+
+func (response PostProject201JSONResponse) VisitPostProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectIdRequestObject struct {
+	Id int64 `json:"id"`
+}
+
+type GetProjectIdResponseObject interface {
+	VisitGetProjectIdResponse(w http.ResponseWriter) error
+}
+
+type GetProjectId200JSONResponse Project
+
+func (response GetProjectId200JSONResponse) VisitGetProjectIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectId404Response struct {
+}
+
+func (response GetProjectId404Response) VisitGetProjectIdResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+
+	// (POST /project)
+	PostProject(ctx context.Context, request PostProjectRequestObject) (PostProjectResponseObject, error)
+
+	// (GET /project/{id})
+	GetProjectId(ctx context.Context, request GetProjectIdRequestObject) (GetProjectIdResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHttpHandlerFunc
@@ -170,4 +308,61 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// PostProject operation middleware
+func (sh *strictHandler) PostProject(w http.ResponseWriter, r *http.Request) {
+	var request PostProjectRequestObject
+
+	var body PostProjectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostProject(ctx, request.(PostProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostProjectResponseObject); ok {
+		if err := validResponse.VisitPostProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectId operation middleware
+func (sh *strictHandler) GetProjectId(w http.ResponseWriter, r *http.Request, id int64) {
+	var request GetProjectIdRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectId(ctx, request.(GetProjectIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectIdResponseObject); ok {
+		if err := validResponse.VisitGetProjectIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }

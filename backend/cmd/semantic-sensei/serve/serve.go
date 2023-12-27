@@ -21,7 +21,7 @@ func Command() *cobra.Command {
 }
 
 func serve(cmd *cobra.Command, _ []string) error {
-	api, err := api.New()
+	api, err := api.New(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to create API: %w", err)
 	}
