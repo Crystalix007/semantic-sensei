@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS classification_tasks (
     embedding BLOB NOT NULL,
     label_id INTEGER NULL,
     FOREIGN KEY (project_id) REFERENCES projects (id),
-    FOREIGN KEY (label_id, project_id) REFERENCES classification_task_labels (id, project_id)
+    FOREIGN KEY (label_id) REFERENCES classification_task_labels (id)
 );
 
 CREATE TABLE IF NOT EXISTS classification_task_labels (
@@ -22,5 +22,6 @@ CREATE TABLE IF NOT EXISTS classification_task_labels (
     project_id INTEGER NOT NULL,
     label TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects (id)
+    FOREIGN KEY (project_id) REFERENCES projects (id),
+    UNIQUE (project_id, label)
 );

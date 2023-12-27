@@ -15,6 +15,19 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// ClassificationTaskLabel defines model for ClassificationTaskLabel.
+type ClassificationTaskLabel struct {
+	CreatedAt time.Time `json:"created_at"`
+	Id        int64     `json:"id"`
+	Label     string    `json:"label"`
+	ProjectId int64     `json:"project_id"`
+}
+
+// CreateClassificationTaskLabel defines model for CreateClassificationTaskLabel.
+type CreateClassificationTaskLabel struct {
+	Label string `json:"label"`
+}
+
 // CreateProject defines model for CreateProject.
 type CreateProject struct {
 	Description string `json:"description"`
@@ -32,6 +45,9 @@ type Project struct {
 // PostProjectJSONRequestBody defines body for PostProject for application/json ContentType.
 type PostProjectJSONRequestBody = CreateProject
 
+// PostProjectProjectIdClassificationTaskLabelJSONRequestBody defines body for PostProjectProjectIdClassificationTaskLabel for application/json ContentType.
+type PostProjectProjectIdClassificationTaskLabelJSONRequestBody = CreateClassificationTaskLabel
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -40,6 +56,12 @@ type ServerInterface interface {
 
 	// (GET /project/{id})
 	GetProjectId(w http.ResponseWriter, r *http.Request, id int64)
+
+	// (POST /project/{project_id}/classification_task_label)
+	PostProjectProjectIdClassificationTaskLabel(w http.ResponseWriter, r *http.Request, projectId int64)
+
+	// (GET /project/{project_id}/classification_task_label/{id})
+	GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -53,6 +75,16 @@ func (_ Unimplemented) PostProject(w http.ResponseWriter, r *http.Request) {
 
 // (GET /project/{id})
 func (_ Unimplemented) GetProjectId(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /project/{project_id}/classification_task_label)
+func (_ Unimplemented) PostProjectProjectIdClassificationTaskLabel(w http.ResponseWriter, r *http.Request, projectId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /project/{project_id}/classification_task_label/{id})
+func (_ Unimplemented) GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -97,6 +129,67 @@ func (siw *ServerInterfaceWrapper) GetProjectId(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetProjectId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// PostProjectProjectIdClassificationTaskLabel operation middleware
+func (siw *ServerInterfaceWrapper) PostProjectProjectIdClassificationTaskLabel(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "project_id", runtime.ParamLocationPath, chi.URLParam(r, "project_id"), &projectId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostProjectProjectIdClassificationTaskLabel(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetProjectProjectIdClassificationTaskLabelId operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "project_id", runtime.ParamLocationPath, chi.URLParam(r, "project_id"), &projectId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectProjectIdClassificationTaskLabelId(w, r, projectId, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -225,6 +318,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/project/{id}", wrapper.GetProjectId)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/project/{project_id}/classification_task_label", wrapper.PostProjectProjectIdClassificationTaskLabel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/project/{project_id}/classification_task_label/{id}", wrapper.GetProjectProjectIdClassificationTaskLabelId)
+	})
 
 	return r
 }
@@ -271,6 +370,50 @@ func (response GetProjectId404Response) VisitGetProjectIdResponse(w http.Respons
 	return nil
 }
 
+type PostProjectProjectIdClassificationTaskLabelRequestObject struct {
+	ProjectId int64 `json:"project_id"`
+	Body      *PostProjectProjectIdClassificationTaskLabelJSONRequestBody
+}
+
+type PostProjectProjectIdClassificationTaskLabelResponseObject interface {
+	VisitPostProjectProjectIdClassificationTaskLabelResponse(w http.ResponseWriter) error
+}
+
+type PostProjectProjectIdClassificationTaskLabel201JSONResponse ClassificationTaskLabel
+
+func (response PostProjectProjectIdClassificationTaskLabel201JSONResponse) VisitPostProjectProjectIdClassificationTaskLabelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectProjectIdClassificationTaskLabelIdRequestObject struct {
+	ProjectId int64 `json:"project_id"`
+	Id        int64 `json:"id"`
+}
+
+type GetProjectProjectIdClassificationTaskLabelIdResponseObject interface {
+	VisitGetProjectProjectIdClassificationTaskLabelIdResponse(w http.ResponseWriter) error
+}
+
+type GetProjectProjectIdClassificationTaskLabelId200JSONResponse ClassificationTaskLabel
+
+func (response GetProjectProjectIdClassificationTaskLabelId200JSONResponse) VisitGetProjectProjectIdClassificationTaskLabelIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectProjectIdClassificationTaskLabelId404Response struct {
+}
+
+func (response GetProjectProjectIdClassificationTaskLabelId404Response) VisitGetProjectProjectIdClassificationTaskLabelIdResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -279,6 +422,12 @@ type StrictServerInterface interface {
 
 	// (GET /project/{id})
 	GetProjectId(ctx context.Context, request GetProjectIdRequestObject) (GetProjectIdResponseObject, error)
+
+	// (POST /project/{project_id}/classification_task_label)
+	PostProjectProjectIdClassificationTaskLabel(ctx context.Context, request PostProjectProjectIdClassificationTaskLabelRequestObject) (PostProjectProjectIdClassificationTaskLabelResponseObject, error)
+
+	// (GET /project/{project_id}/classification_task_label/{id})
+	GetProjectProjectIdClassificationTaskLabelId(ctx context.Context, request GetProjectProjectIdClassificationTaskLabelIdRequestObject) (GetProjectProjectIdClassificationTaskLabelIdResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHttpHandlerFunc
@@ -360,6 +509,66 @@ func (sh *strictHandler) GetProjectId(w http.ResponseWriter, r *http.Request, id
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProjectIdResponseObject); ok {
 		if err := validResponse.VisitGetProjectIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostProjectProjectIdClassificationTaskLabel operation middleware
+func (sh *strictHandler) PostProjectProjectIdClassificationTaskLabel(w http.ResponseWriter, r *http.Request, projectId int64) {
+	var request PostProjectProjectIdClassificationTaskLabelRequestObject
+
+	request.ProjectId = projectId
+
+	var body PostProjectProjectIdClassificationTaskLabelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostProjectProjectIdClassificationTaskLabel(ctx, request.(PostProjectProjectIdClassificationTaskLabelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostProjectProjectIdClassificationTaskLabel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostProjectProjectIdClassificationTaskLabelResponseObject); ok {
+		if err := validResponse.VisitPostProjectProjectIdClassificationTaskLabelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectProjectIdClassificationTaskLabelId operation middleware
+func (sh *strictHandler) GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64) {
+	var request GetProjectProjectIdClassificationTaskLabelIdRequestObject
+
+	request.ProjectId = projectId
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectProjectIdClassificationTaskLabelId(ctx, request.(GetProjectProjectIdClassificationTaskLabelIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectProjectIdClassificationTaskLabelId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectProjectIdClassificationTaskLabelIdResponseObject); ok {
+		if err := validResponse.VisitGetProjectProjectIdClassificationTaskLabelIdResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

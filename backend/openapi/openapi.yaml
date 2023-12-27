@@ -42,6 +42,56 @@ paths:
         404:
           description: "The project with the given id does not exist"
 
+  /project/{project_id}/classification_task_label:
+    post:
+      description: "Creates a new classification task label"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClassificationTaskLabel"
+      responses:
+        201:
+          description: "The created classification task label"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationTaskLabel"
+
+  /project/{project_id}/classification_task_label/{id}:
+    get:
+      description: "Gets the classification task label with the given id"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+      responses:
+        200:
+          description: "The classification task label with the given id"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationTaskLabel"
+        404:
+          description: "The classification task label with the given id does not exist"
+
 components:
   schemas:
     CreateProject:
@@ -72,4 +122,32 @@ components:
         - id
         - name
         - description
+        - created_at
+
+    CreateClassificationTaskLabel:
+      type: object
+      properties:
+        label:
+          type: string
+      required:
+        - label
+
+    ClassificationTaskLabel:
+      type: object
+      properties:
+        id:
+          type: integer
+          x-go-type: int64
+        project_id:
+          type: integer
+          x-go-type: int64
+        label:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - project_id
+        - label
         - created_at
