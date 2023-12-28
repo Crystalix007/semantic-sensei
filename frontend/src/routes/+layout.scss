@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+h1 {
+  @apply text-4xl;
+}
+
+input,
+textarea {
+  @apply rounded-md border-2 bg-gray-100;
+}
+
+.create-button {
+  @apply bg-blue-500 text-white px-4 py-2 rounded-md;
+}
