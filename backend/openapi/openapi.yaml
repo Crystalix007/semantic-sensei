@@ -24,7 +24,7 @@ paths:
                 $ref: "#/components/schemas/Project"
   /project/{id}:
     get:
-      description: "Gets the project with the given id"
+      description: "Gets the project with the given ID"
       parameters:
         - name: id
           in: path
@@ -34,13 +34,13 @@ paths:
             x-go-type: int64
       responses:
         200:
-          description: "The project with the given id"
+          description: "The project with the given ID"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Project"
         404:
-          description: "The project with the given id does not exist"
+          description: "The project with the given ID does not exist"
 
   /project/{project_id}/classification_task_label:
     post:
@@ -68,7 +68,7 @@ paths:
 
   /project/{project_id}/classification_task_label/{id}:
     get:
-      description: "Gets the classification task label with the given id"
+      description: "Gets the classification task label with the given ID"
       parameters:
         - name: project_id
           in: path
@@ -84,13 +84,63 @@ paths:
             x-go-type: int64
       responses:
         200:
-          description: "The classification task label with the given id"
+          description: "The classification task label with the given ID"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClassificationTaskLabel"
         404:
-          description: "The classification task label with the given id does not exist"
+          description: "The classification task label with the given ID does not exist"
+
+  /project/{project_id}/classification_task:
+    post:
+      description: "Creates a new classification task"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClassificationTask"
+      responses:
+        201:
+          description: "The created classification task"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationTask"
+
+  /project/{project_id}/classification_task/{id}:
+    get:
+      description: "Gets the classification task with the given ID"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+      responses:
+        200:
+          description: "The classification task with the given ID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationTask"
+        404:
+          description: "The classification task with the given ID does not exist"
 
 components:
   schemas:
@@ -150,4 +200,49 @@ components:
         - id
         - project_id
         - label
+        - created_at
+
+    CreateClassificationTask:
+      type: object
+      properties:
+        llm_input:
+          type: string
+        llm_output:
+          type: string
+        embedding:
+          type: string
+          format: byte
+      required:
+        - llm_input
+        - llm_output
+        - embedding
+
+    ClassificationTask:
+      type: object
+      properties:
+        id:
+          type: integer
+          x-go-type: int64
+        project_id:
+          type: integer
+          x-go-type: int64
+        llm_input:
+          type: string
+        llm_output:
+          type: string
+        embedding:
+          type: string
+          format: byte
+        created_at:
+          type: string
+          format: date-time
+        label_id:
+          type: integer
+          x-go-type: int64
+      required:
+        - id
+        - project_id
+        - llm_input
+        - llm_output
+        - embedding
         - created_at
