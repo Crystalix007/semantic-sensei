@@ -12,7 +12,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
               $ref: "#/components/schemas/CreateProject"
       responses:
@@ -22,6 +22,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Project"
+        303:
+          $ref: "#/components/responses/Redirect"
+
   /project/{id}:
     get:
       description: "Gets the project with the given ID"
@@ -55,7 +58,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
               $ref: "#/components/schemas/CreateClassificationTaskLabel"
       responses:
@@ -65,6 +68,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClassificationTaskLabel"
+        303:
+          $ref: "#/components/responses/Redirect"
 
   /project/{project_id}/classification_task_label/{id}:
     get:
@@ -105,7 +110,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
               $ref: "#/components/schemas/CreateClassificationTask"
       responses:
@@ -115,6 +120,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClassificationTask"
+        303:
+          $ref: "#/components/responses/Redirect"
 
   /project/{project_id}/classification_task/{id}:
     get:
@@ -246,3 +253,15 @@ components:
         - llm_output
         - embedding
         - created_at
+
+    Location:
+      type: string
+      format: uri
+
+  responses:
+    Redirect:
+      description: "A redirection to the frontend page with the created resource"
+      headers:
+        Location:
+          schema:
+            $ref: "#/components/schemas/Location"

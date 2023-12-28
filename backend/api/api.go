@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Crystalix007/semantic-sensei/backend/api/headers"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 	"github.com/go-chi/chi/v5"
@@ -26,6 +27,9 @@ var _ http.Handler = (*API)(nil)
 // It returns a pointer to the API and an error, if any.
 func New(ctx context.Context, opts ...Option) (*API, error) {
 	chi := chi.NewMux()
+
+	// Store request headers in the context.
+	chi.Use(headers.Store)
 
 	a := &API{
 		handler: chi,
@@ -49,7 +53,8 @@ func New(ctx context.Context, opts ...Option) (*API, error) {
 	}
 
 	strictServerHandler := openapi.NewStrictHandler(a, nil)
-	openapi.HandlerFromMuxWithBaseURL(strictServerHandler, chi, "/api")
+
+	chi.Mount("/api", openapi.Handler(strictServerHandler))
 
 	return a, nil
 }

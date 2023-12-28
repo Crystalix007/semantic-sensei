@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Crystalix007/semantic-sensei/backend/api/redirect"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 )
@@ -57,6 +58,10 @@ func (a API) PostProjectProjectIdClassificationTask(
 			"api: error creating classification task: %w",
 			err,
 		)
+	}
+
+	if redirect.Should(ctx) {
+		return redirect.To(fmt.Sprintf("/api/projects/%d/classification_tasks/%d", params.ProjectId, taskID))
 	}
 
 	task, err := a.db.GetClassificationTask(ctx, taskID)

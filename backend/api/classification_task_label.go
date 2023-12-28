@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Crystalix007/semantic-sensei/backend/api/redirect"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 )
@@ -50,6 +51,10 @@ func (a API) PostProjectProjectIdClassificationTaskLabel(
 			"api: error creating classification task label: %w",
 			err,
 		)
+	}
+
+	if redirect.Should(ctx) {
+		return redirect.To(fmt.Sprintf("/project/%d/classification-task-label/%d", params.ProjectId, labelID))
 	}
 
 	label, err := a.db.GetClassificationTaskLabel(ctx, labelID)

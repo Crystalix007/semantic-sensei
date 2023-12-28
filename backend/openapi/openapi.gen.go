@@ -52,6 +52,9 @@ type CreateProject struct {
 	Name        string `json:"name"`
 }
 
+// Location defines model for Location.
+type Location = string
+
 // Project defines model for Project.
 type Project struct {
 	CreatedAt   time.Time `json:"created_at"`
@@ -60,14 +63,14 @@ type Project struct {
 	Name        string    `json:"name"`
 }
 
-// PostProjectJSONRequestBody defines body for PostProject for application/json ContentType.
-type PostProjectJSONRequestBody = CreateProject
+// PostProjectFormdataRequestBody defines body for PostProject for application/x-www-form-urlencoded ContentType.
+type PostProjectFormdataRequestBody = CreateProject
 
-// PostProjectProjectIdClassificationTaskJSONRequestBody defines body for PostProjectProjectIdClassificationTask for application/json ContentType.
-type PostProjectProjectIdClassificationTaskJSONRequestBody = CreateClassificationTask
+// PostProjectProjectIdClassificationTaskFormdataRequestBody defines body for PostProjectProjectIdClassificationTask for application/x-www-form-urlencoded ContentType.
+type PostProjectProjectIdClassificationTaskFormdataRequestBody = CreateClassificationTask
 
-// PostProjectProjectIdClassificationTaskLabelJSONRequestBody defines body for PostProjectProjectIdClassificationTaskLabel for application/json ContentType.
-type PostProjectProjectIdClassificationTaskLabelJSONRequestBody = CreateClassificationTaskLabel
+// PostProjectProjectIdClassificationTaskLabelFormdataRequestBody defines body for PostProjectProjectIdClassificationTaskLabel for application/x-www-form-urlencoded ContentType.
+type PostProjectProjectIdClassificationTaskLabelFormdataRequestBody = CreateClassificationTaskLabel
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -432,8 +435,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
+type RedirectResponseHeaders struct {
+	Location Location
+}
+type RedirectResponse struct {
+	Headers RedirectResponseHeaders
+}
+
 type PostProjectRequestObject struct {
-	Body *PostProjectJSONRequestBody
+	Body *PostProjectFormdataRequestBody
 }
 
 type PostProjectResponseObject interface {
@@ -447,6 +457,14 @@ func (response PostProject201JSONResponse) VisitPostProjectResponse(w http.Respo
 	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type PostProject303Response = RedirectResponse
+
+func (response PostProject303Response) VisitPostProjectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(303)
+	return nil
 }
 
 type GetProjectIdRequestObject struct {
@@ -476,7 +494,7 @@ func (response GetProjectId404Response) VisitGetProjectIdResponse(w http.Respons
 
 type PostProjectProjectIdClassificationTaskRequestObject struct {
 	ProjectId int64 `json:"project_id"`
-	Body      *PostProjectProjectIdClassificationTaskJSONRequestBody
+	Body      *PostProjectProjectIdClassificationTaskFormdataRequestBody
 }
 
 type PostProjectProjectIdClassificationTaskResponseObject interface {
@@ -490,6 +508,14 @@ func (response PostProjectProjectIdClassificationTask201JSONResponse) VisitPostP
 	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type PostProjectProjectIdClassificationTask303Response = RedirectResponse
+
+func (response PostProjectProjectIdClassificationTask303Response) VisitPostProjectProjectIdClassificationTaskResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(303)
+	return nil
 }
 
 type GetProjectProjectIdClassificationTaskIdRequestObject struct {
@@ -520,7 +546,7 @@ func (response GetProjectProjectIdClassificationTaskId404Response) VisitGetProje
 
 type PostProjectProjectIdClassificationTaskLabelRequestObject struct {
 	ProjectId int64 `json:"project_id"`
-	Body      *PostProjectProjectIdClassificationTaskLabelJSONRequestBody
+	Body      *PostProjectProjectIdClassificationTaskLabelFormdataRequestBody
 }
 
 type PostProjectProjectIdClassificationTaskLabelResponseObject interface {
@@ -534,6 +560,14 @@ func (response PostProjectProjectIdClassificationTaskLabel201JSONResponse) Visit
 	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type PostProjectProjectIdClassificationTaskLabel303Response = RedirectResponse
+
+func (response PostProjectProjectIdClassificationTaskLabel303Response) VisitPostProjectProjectIdClassificationTaskLabelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Location", fmt.Sprint(response.Headers.Location))
+	w.WriteHeader(303)
+	return nil
 }
 
 type GetProjectProjectIdClassificationTaskLabelIdRequestObject struct {
@@ -617,9 +651,13 @@ type strictHandler struct {
 func (sh *strictHandler) PostProject(w http.ResponseWriter, r *http.Request) {
 	var request PostProjectRequestObject
 
-	var body PostProjectJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+	if err := r.ParseForm(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+		return
+	}
+	var body PostProjectFormdataRequestBody
+	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
 		return
 	}
 	request.Body = &body
@@ -676,9 +714,13 @@ func (sh *strictHandler) PostProjectProjectIdClassificationTask(w http.ResponseW
 
 	request.ProjectId = projectId
 
-	var body PostProjectProjectIdClassificationTaskJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+	if err := r.ParseForm(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+		return
+	}
+	var body PostProjectProjectIdClassificationTaskFormdataRequestBody
+	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
 		return
 	}
 	request.Body = &body
@@ -736,9 +778,13 @@ func (sh *strictHandler) PostProjectProjectIdClassificationTaskLabel(w http.Resp
 
 	request.ProjectId = projectId
 
-	var body PostProjectProjectIdClassificationTaskLabelJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+	if err := r.ParseForm(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+		return
+	}
+	var body PostProjectProjectIdClassificationTaskLabelFormdataRequestBody
+	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
 		return
 	}
 	request.Body = &body

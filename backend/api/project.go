@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Crystalix007/semantic-sensei/backend/api/redirect"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 )
@@ -55,6 +56,12 @@ func (a API) PostProject(ctx context.Context, params openapi.PostProjectRequestO
 			"api: error creating project: %w",
 			err,
 		)
+	}
+
+	// If the origin is the frontend, return a 303 response with the location
+	// header set to the project's URL.
+	if redirect.Should(ctx) {
+		return redirect.To(fmt.Sprintf("/project/%d", projectID))
 	}
 
 	project, err := a.db.GetProject(ctx, projectID)
