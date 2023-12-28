@@ -2,7 +2,6 @@
 
 Label your LLM outputs with ease, and build an automatic model as you go!
 
-
 ## Developing
 
 Once you've created a project and installed dependencies with `pnpm install`

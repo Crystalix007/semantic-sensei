@@ -61,7 +61,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 	}
 
 	if redirect.Should(ctx) {
-		return redirect.To(fmt.Sprintf("/api/projects/%d/classification_tasks/%d", params.ProjectId, taskID))
+		return redirect.To(fmt.Sprintf("/api/projects/%d/tasks/%d", params.ProjectId, taskID))
 	}
 
 	task, err := a.db.GetClassificationTask(ctx, taskID)

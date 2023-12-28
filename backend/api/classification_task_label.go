@@ -54,7 +54,7 @@ func (a API) PostProjectProjectIdClassificationTaskLabel(
 	}
 
 	if redirect.Should(ctx) {
-		return redirect.To(fmt.Sprintf("/project/%d/classification-task-label/%d", params.ProjectId, labelID))
+		return redirect.To(fmt.Sprintf("/project/%d/label/%d", params.ProjectId, labelID))
 	}
 
 	label, err := a.db.GetClassificationTaskLabel(ctx, labelID)

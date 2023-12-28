@@ -1,3 +1,3 @@
-[*.{ts,svelte,html,scss}]
+[*.{ts,svelte,html,scss,json}]
 indent_style = tab
 indent_size = 2
