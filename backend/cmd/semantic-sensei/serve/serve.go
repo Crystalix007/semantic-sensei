@@ -2,6 +2,8 @@ package serve
 
 import (
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -20,6 +22,7 @@ func Command() *cobra.Command {
 	}
 
 	cmd.Flags().String("dev", "", "enable development mode, proxying non-API requests to the specified URL")
+	cmd.Flags().String("address", "", "sets the address that the API is hosted on")
 
 	return cmd
 }
@@ -44,5 +47,19 @@ func serve(cmd *cobra.Command, _ []string) error {
 		mux.Handle("/", reverseProxy)
 	}
 
-	return http.ListenAndServe(":8080", mux)
+	address, err := cmd.Flags().GetString("address")
+	if err != nil {
+		address = ":0"
+	}
+
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("failed to listen on %s: %w", address, err)
+	}
+
+	defer listener.Close()
+
+	log.Printf("listening on %s", listener.Addr())
+
+	return http.Serve(listener, mux)
 }
