@@ -2,19 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-h1 {
-	@apply text-4xl;
-}
-
-input,
-textarea {
-	@apply rounded-md border-2 bg-gray-100;
+@layer base {
+	input,
+	textarea {
+		@apply rounded-md border-2 bg-gray-100;
+	}
 }
 
 .create-button {
 	@apply bg-blue-500 text-white px-4 py-2 rounded-md;
 }
 
+@mixin page {
+	@apply min-w-96;
+}
+
 .centred-page {
-	@apply min-w-screen min-h-screen flex flex-col items-center justify-center;
+	@apply my-auto;
+	@include page;
+}
+
+.top-page {
+	@apply mt-12;
+	@include page;
+}
+
+h2.page-title {
+	@apply text-2xl font-bold;
 }

@@ -1,6 +1,13 @@
-<div class="centred-page">
-	<div class="h-fit w-fit border-2 rounded-lg p-6 flex flex-col gap-4">
-		<h1>Create a new project</h1>
+<script lang="ts">
+	import BxX from 'svelte-boxicons/BxX.svelte';
+</script>
+
+<div class="top-page">
+	<div class="border-2 rounded-lg p-6 flex flex-col gap-4">
+		<div class="flex items-center justify-between">
+			<h2 class="page-title">Create a new project</h2>
+			<a class="border-zinc-200 shadow-protruding rounded-md" href="/"><BxX /></a>
+		</div>
 		<form class="flex flex-col gap-2" action="/api/project" method="post">
 			<div class="flex flex-col gap-1">
 				<label for="name">Name</label>
