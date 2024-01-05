@@ -30,12 +30,35 @@ func (a API) GetProjectId(ctx context.Context, params openapi.GetProjectIdReques
 		)
 	}
 
+	// Add project labels to response.
+	labels, err := a.db.GetClassificationTaskLabelsForProject(ctx, project.ID)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error getting labels for project %d: %w",
+			params.Id,
+			err,
+		)
+	}
+
+	projectLabels := make([]openapi.ClassificationTaskLabel, len(labels))
+
+	for i, label := range labels {
+		projectLabels[i] =
+			openapi.ClassificationTaskLabel{
+				CreatedAt: label.CreatedAt,
+				Id:        label.ID,
+				Label:     label.Label,
+				ProjectId: label.ProjectID,
+			}
+	}
+
 	// Create and return the response object with the project details
 	return openapi.GetProjectId200JSONResponse{
 		CreatedAt:   project.CreatedAt,
 		Description: project.Description,
 		Id:          project.ID,
 		Name:        project.Name,
+		Labels:      &projectLabels,
 	}, nil
 }
 

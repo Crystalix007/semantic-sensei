@@ -57,10 +57,11 @@ type Location = string
 
 // Project defines model for Project.
 type Project struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Description string    `json:"description"`
-	Id          int64     `json:"id"`
-	Name        string    `json:"name"`
+	CreatedAt   time.Time                  `json:"created_at"`
+	Description string                     `json:"description"`
+	Id          int64                      `json:"id"`
+	Labels      *[]ClassificationTaskLabel `json:"labels,omitempty"`
+	Name        string                     `json:"name"`
 }
 
 // PostProjectFormdataRequestBody defines body for PostProject for application/x-www-form-urlencoded ContentType.

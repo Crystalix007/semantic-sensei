@@ -216,6 +216,47 @@ func (d Database) GetClassificationTaskLabel(ctx context.Context, id int64) (*Cl
 	return &ctl, nil
 }
 
+// GetClassificationTaskLabelsForProject returns the classification task label
+// with the given project ID.
+func (d Database) GetClassificationTaskLabelsForProject(
+	ctx context.Context,
+	projectID int64,
+) ([]ClassificationTaskLabel, error) {
+	rows, err := d.db.QueryContext(ctx, `
+		SELECT id, project_id, label, created_at
+		FROM classification_task_labels
+		WHERE project_id = $1
+	`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting classification task labels for project: %w",
+			err,
+		)
+	}
+
+	var ctls []ClassificationTaskLabel
+
+	for rows.Next() {
+		var ctl ClassificationTaskLabel
+
+		if err := rows.Scan(
+			&ctl.ID,
+			&ctl.ProjectID,
+			&ctl.Label,
+			&ctl.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf(
+				"storage: error scanning project classification task label row: %w",
+				err,
+			)
+		}
+
+		ctls = append(ctls, ctl)
+	}
+
+	return ctls, nil
+}
+
 // UpdateClassificationTaskLabel updates the classification task label with the
 // provided ID with the provided values.
 func (d Database) UpdateClassificationTaskLabel(ctx context.Context, ctl ClassificationTaskLabel) error {
