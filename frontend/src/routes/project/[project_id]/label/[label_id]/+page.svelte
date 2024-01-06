@@ -21,7 +21,6 @@
 			{#await data}
 				<p>Loading...</p>
 			{:then data}
-				<h3>Project {data.project_id}</h3>
 				<p>Created {new Date(data.created_at).toLocaleString()}</p>
 			{/await}
 		</div>

@@ -23,17 +23,25 @@ func Command() *cobra.Command {
 
 	cmd.Flags().String("dev", "", "enable development mode, proxying non-API requests to the specified URL")
 	cmd.Flags().String("address", "", "sets the address that the API is hosted on")
+	cmd.Flags().Bool("debug", false, "enables debug logging of requests")
 
 	return cmd
 }
 
 func serve(cmd *cobra.Command, _ []string) error {
-	api, err := api.New(cmd.Context())
+	apiOpts := []api.Option{}
+
+	if debug, err := cmd.Flags().GetBool("debug"); err == nil && debug {
+		apiOpts = append(apiOpts, api.WithLogging(true))
+	}
+
+	api, err := api.New(cmd.Context(), apiOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create API: %w", err)
 	}
 
 	mux := http.NewServeMux()
+
 	mux.Handle("/api/", api)
 
 	if dev, err := cmd.Flags().GetString("dev"); err == nil && dev != "" {

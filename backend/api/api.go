@@ -3,18 +3,22 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/Crystalix007/semantic-sensei/backend/api/headers"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 // API represents an API with a handler.
 type API struct {
 	handler http.Handler
 	db      *storage.Database
+
+	loggingEnabled bool
 }
 
 // Ensure [API] implements [openapi.ServerInterface].
@@ -43,6 +47,10 @@ func New(ctx context.Context, opts ...Option) (*API, error) {
 		return nil, err
 	}
 
+	if a.loggingEnabled {
+		chi.Use(middleware.Logger)
+	}
+
 	// TODO: the DB needs to be more persistent here, but for now, we'll just
 	// force the schema to be reloaded on every startup.
 	if err := a.db.Migrate(ctx); err != nil {
@@ -62,5 +70,7 @@ func New(ctx context.Context, opts ...Option) (*API, error) {
 // ServeHTTP handles the HTTP requests for the API.
 // It delegates the request to the underlying handler.
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	slog.InfoContext(r.Context(), "serving request", "path", r.URL.Path)
+
 	a.handler.ServeHTTP(w, r)
 }

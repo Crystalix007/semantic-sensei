@@ -60,6 +60,8 @@ func (d Database) FindProjects(ctx context.Context) ([]Project, error) {
 		)
 	}
 
+	defer rows.Close()
+
 	var projects []Project
 
 	for rows.Next() {
@@ -176,6 +178,52 @@ func (d Database) GetClassificationTask(ctx context.Context, id int64) (*Classif
 	return &ct, nil
 }
 
+// FindClassificationTasksForProject returns a list of classification tasks for
+// the specified project ID.
+func (d Database) FindClassificationTasksForProject(
+	ctx context.Context,
+	projectID int64,
+) ([]ClassificationTask, error) {
+	rows, err := d.db.QueryContext(ctx, `
+		SELECT id, project_id, llm_input, llm_output, embedding, label_id, created_at
+		FROM classification_tasks
+		WHERE project_id = $1
+	`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error finding classification tasks for project: %w",
+			err,
+		)
+	}
+
+	defer rows.Close()
+
+	var classificationTasks []ClassificationTask
+
+	for rows.Next() {
+		var classificationTask ClassificationTask
+
+		if err := rows.Scan(
+			&classificationTask.ID,
+			&classificationTask.ProjectID,
+			&classificationTask.LLMInput,
+			&classificationTask.LLMOutput,
+			&classificationTask.Embedding,
+			&classificationTask.LabelID,
+			&classificationTask.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf(
+				"storage: error scanning classification task: %w",
+				err,
+			)
+		}
+
+		classificationTasks = append(classificationTasks, classificationTask)
+	}
+
+	return classificationTasks, nil
+}
+
 // UpdateClassificationTask updates the classification task with the provided ID
 // with the provided values.
 func (d Database) UpdateClassificationTask(ctx context.Context, ct ClassificationTask) error {
@@ -271,6 +319,8 @@ func (d Database) FindClassificationTaskLabelsForProject(
 			err,
 		)
 	}
+
+	defer rows.Close()
 
 	var ctls []ClassificationTaskLabel
 
