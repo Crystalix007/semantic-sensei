@@ -6,6 +6,17 @@ servers:
   - url: http://localhost:8080/api/
 
 paths:
+  /projects:
+    get:
+      description: "Gets the list of projects"
+      responses:
+        200:
+          description: "The list of projects"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projects"
+
   /project:
     post:
       description: "Creates a new project"
@@ -184,6 +195,14 @@ components:
         - name
         - description
         - created_at
+
+    Projects:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
 
     CreateClassificationTaskLabel:
       type: object

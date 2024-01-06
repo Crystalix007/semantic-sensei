@@ -13,7 +13,9 @@
 			{:then data}
 				<h2 class="page-title">Label {data.label} (#{data.id})</h2>
 			{/await}
-			<a class="border-zinc-200 shadow-protruding rounded-md" href=".."><BxX /></a>
+			<a class="border-zinc-200 shadow-protruding rounded-md" href=".."
+				><BxX /></a
+			>
 		</div>
 		<div>
 			{#await data}

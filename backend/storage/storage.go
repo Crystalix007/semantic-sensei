@@ -46,6 +46,42 @@ func (d Database) GetProject(ctx context.Context, id int64) (*Project, error) {
 	return &p, nil
 }
 
+// FindProjects gets a list of all projects.
+func (d Database) FindProjects(ctx context.Context) ([]Project, error) {
+	rows, err := d.db.QueryContext(ctx, `
+		SELECT id, name, description, created_at
+		FROM projects
+	`)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting all projects: %w",
+			err,
+		)
+	}
+
+	var projects []Project
+
+	for rows.Next() {
+		var project Project
+
+		if err := rows.Scan(
+			&project.ID,
+			&project.Name,
+			&project.Description,
+			&project.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf(
+				"storage: error scanning project row: %w",
+				err,
+			)
+		}
+
+		projects = append(projects, project)
+	}
+
+	return projects, nil
+}
+
 // UpdateProject updates the project with the provided ID with the provided
 // values.
 func (d Database) UpdateProject(ctx context.Context, p Project) error {

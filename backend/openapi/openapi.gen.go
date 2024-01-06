@@ -64,6 +64,11 @@ type Project struct {
 	Name        string                     `json:"name"`
 }
 
+// Projects defines model for Projects.
+type Projects struct {
+	Projects *[]Project `json:"projects,omitempty"`
+}
+
 // PostProjectFormdataRequestBody defines body for PostProject for application/x-www-form-urlencoded ContentType.
 type PostProjectFormdataRequestBody = CreateProject
 
@@ -93,6 +98,9 @@ type ServerInterface interface {
 
 	// (GET /project/{project_id}/classification_task_label/{id})
 	GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64)
+
+	// (GET /projects)
+	GetProjects(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -126,6 +134,11 @@ func (_ Unimplemented) PostProjectProjectIdClassificationTaskLabel(w http.Respon
 
 // (GET /project/{project_id}/classification_task_label/{id})
 func (_ Unimplemented) GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /projects)
+func (_ Unimplemented) GetProjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -301,6 +314,21 @@ func (siw *ServerInterfaceWrapper) GetProjectProjectIdClassificationTaskLabelId(
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// GetProjects operation middleware
+func (siw *ServerInterfaceWrapper) GetProjects(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjects(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -431,6 +459,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/project/{project_id}/classification_task_label/{id}", wrapper.GetProjectProjectIdClassificationTaskLabelId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects", wrapper.GetProjects)
 	})
 
 	return r
@@ -597,6 +628,22 @@ func (response GetProjectProjectIdClassificationTaskLabelId404Response) VisitGet
 	return nil
 }
 
+type GetProjectsRequestObject struct {
+}
+
+type GetProjectsResponseObject interface {
+	VisitGetProjectsResponse(w http.ResponseWriter) error
+}
+
+type GetProjects200JSONResponse Projects
+
+func (response GetProjects200JSONResponse) VisitGetProjectsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -617,6 +664,9 @@ type StrictServerInterface interface {
 
 	// (GET /project/{project_id}/classification_task_label/{id})
 	GetProjectProjectIdClassificationTaskLabelId(ctx context.Context, request GetProjectProjectIdClassificationTaskLabelIdRequestObject) (GetProjectProjectIdClassificationTaskLabelIdResponseObject, error)
+
+	// (GET /projects)
+	GetProjects(ctx context.Context, request GetProjectsRequestObject) (GetProjectsResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHttpHandlerFunc
@@ -830,6 +880,30 @@ func (sh *strictHandler) GetProjectProjectIdClassificationTaskLabelId(w http.Res
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProjectProjectIdClassificationTaskLabelIdResponseObject); ok {
 		if err := validResponse.VisitGetProjectProjectIdClassificationTaskLabelIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjects operation middleware
+func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
+	var request GetProjectsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjects(ctx, request.(GetProjectsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjects")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectsResponseObject); ok {
+		if err := validResponse.VisitGetProjectsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
