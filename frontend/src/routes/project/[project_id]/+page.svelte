@@ -61,6 +61,46 @@
 						</tbody>
 					</table>
 				{/if}
+				<hr class="my-2 h-px border-0 bg-zinc-300" />
+				<div class="flex justify-between mb-1">
+					<h4 class="text-lg font-medium">Tasks</h4>
+					<a
+						href="/project/{data.id}/task/create"
+						class="block bg-teal-600 my-auto py-0.5 px-2 rounded-md border-blue-300 border text-white"
+						>New Task</a
+					>
+				</div>
+				{#if data.classification_tasks.length !== 0}
+					<table
+						class="w-full pt-2 border border-zinc-300 rounded-md border-spacing-1 text-center"
+					>
+						<thead>
+							<tr class="border border-zinc-300">
+								<th class="border border-zinc-300">ID</th>
+								<th class="border border-zinc-300">Created At</th>
+								<th class="border border-zinc-300">Label</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each data.classification_tasks as task}
+								<tr class="border border-zinc-300">
+									<td class="border border-zinc-300">
+										<a
+											class="text-teal-600"
+											href="/project/{data.id}/task/{task.id}">{task.id}</a
+										>
+									</td>
+									<td class="border border-zinc-300"
+										>{new Date(task.created_at).toLocaleString()}</td
+									>
+									<td class="border border-zinc-300"
+										>{#if task.label_id}{task.label_id}{/if}</td
+									>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
 			{/await}
 		</div>
 	</div>

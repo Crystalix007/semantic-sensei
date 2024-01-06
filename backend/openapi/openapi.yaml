@@ -160,6 +160,40 @@ paths:
         404:
           description: "The classification task with the given ID does not exist"
 
+  /project/{project_id}/classification_task/{id}/label:
+    post:
+      description: "Labels the classification task with the given ID"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/LabelTask"
+      responses:
+        200:
+          description: "The updated classification task"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationTask"
+        303:
+          $ref: "#/components/responses/Redirect"
+        404:
+          description: "The classification task with the given ID does not exist"
+
 components:
   schemas:
     CreateProject:
@@ -190,6 +224,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ClassificationTaskLabel"
+        classification_tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClassificationTask"
       required:
         - id
         - name
@@ -276,6 +314,15 @@ components:
         - llm_output
         - embedding
         - created_at
+
+    LabelTask:
+      type: object
+      properties:
+        label:
+          type: integer
+          x-go-type: int64
+      required:
+        - label
 
     Location:
       type: string

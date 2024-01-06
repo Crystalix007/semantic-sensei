@@ -61,7 +61,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 	}
 
 	if redirect.Should(ctx) {
-		return redirect.To(fmt.Sprintf("/api/projects/%d/tasks/%d", params.ProjectId, taskID))
+		return redirect.To(fmt.Sprintf("/project/%d/task/%d", params.ProjectId, taskID))
 	}
 
 	task, err := a.db.GetClassificationTask(ctx, taskID)
@@ -77,6 +77,51 @@ func (a API) PostProjectProjectIdClassificationTask(
 		CreatedAt: task.CreatedAt,
 		Embedding: task.Embedding,
 		Id:        taskID,
+		LabelId:   task.LabelID,
+		LlmInput:  task.LLMInput,
+		LlmOutput: task.LLMOutput,
+		ProjectId: task.ProjectID,
+	}, nil
+}
+
+// PostProjectProjectIdClassificationTaskIdLabel allows a task to be labelled
+// with the given task.
+func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
+	ctx context.Context,
+	request openapi.PostProjectProjectIdClassificationTaskIdLabelRequestObject,
+) (openapi.PostProjectProjectIdClassificationTaskIdLabelResponseObject, error) {
+	task, err := a.db.GetClassificationTask(ctx, request.Id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return openapi.PostProjectProjectIdClassificationTaskIdLabel404Response{}, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error getting classification task: %w",
+			err,
+		)
+	}
+
+	task.LabelID = &request.Body.Label
+
+	fmt.Printf("Updating classification task to %#v, with label %#v\n", *task, *task.LabelID)
+
+	err = a.db.UpdateClassificationTask(ctx, *task)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error updating classification task: %w",
+			err,
+		)
+	}
+
+	if redirect.Should(ctx) {
+		return redirect.To(fmt.Sprintf("/project/%d/task/%d", request.ProjectId, request.Id))
+	}
+
+	return openapi.PostProjectProjectIdClassificationTaskIdLabel200JSONResponse{
+		CreatedAt: task.CreatedAt,
+		Embedding: task.Embedding,
+		Id:        task.ID,
 		LabelId:   task.LabelID,
 		LlmInput:  task.LLMInput,
 		LlmOutput: task.LLMOutput,

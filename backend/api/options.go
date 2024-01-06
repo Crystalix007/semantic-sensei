@@ -16,6 +16,13 @@ func WithDatabase(db *storage.Database) Option {
 	}
 }
 
+// WithLogging sets the logging enabled flag.
+func WithLogging(logging bool) Option {
+	return func(a *API) {
+		a.loggingEnabled = logging
+	}
+}
+
 // setDefaults sets the default values for the API instance.
 func (a *API) setDefaults() error {
 	var err error
