@@ -31,7 +31,7 @@ func (a API) GetProjectId(ctx context.Context, params openapi.GetProjectIdReques
 	}
 
 	// Add project labels to response.
-	labels, err := a.db.GetClassificationTaskLabelsForProject(ctx, project.ID)
+	labels, err := a.db.FindClassificationTaskLabelsForProject(ctx, project.ID)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error getting labels for project %d: %w",

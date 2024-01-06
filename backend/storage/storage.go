@@ -51,6 +51,7 @@ func (d Database) FindProjects(ctx context.Context) ([]Project, error) {
 	rows, err := d.db.QueryContext(ctx, `
 		SELECT id, name, description, created_at
 		FROM projects
+		ORDER BY id ASC
 	`)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -252,9 +253,9 @@ func (d Database) GetClassificationTaskLabel(ctx context.Context, id int64) (*Cl
 	return &ctl, nil
 }
 
-// GetClassificationTaskLabelsForProject returns the classification task label
+// FindClassificationTaskLabelsForProject returns the classification task label
 // with the given project ID.
-func (d Database) GetClassificationTaskLabelsForProject(
+func (d Database) FindClassificationTaskLabelsForProject(
 	ctx context.Context,
 	projectID int64,
 ) ([]ClassificationTaskLabel, error) {
@@ -262,6 +263,7 @@ func (d Database) GetClassificationTaskLabelsForProject(
 		SELECT id, project_id, label, created_at
 		FROM classification_task_labels
 		WHERE project_id = $1
+		ORDER BY id ASC
 	`, projectID)
 	if err != nil {
 		return nil, fmt.Errorf(
