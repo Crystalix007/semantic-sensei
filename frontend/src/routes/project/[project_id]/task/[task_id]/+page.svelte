@@ -34,12 +34,18 @@
 					</div>
 				</div>
 				<hr class="h-px border-0 bg-slate-300 mt-3 mb-2" />
-				<form class="w-full flex flex-wrap gap-1" action="{data.label_endpoint}" method="post">
+				<form
+					class="w-full flex flex-wrap gap-1"
+					action={data.label_endpoint}
+					method="post"
+				>
 					{#each data.labels as label}
-						<button class="create-button" name="label" value={label.id}>{label.label}</button>
+						<button class="create-button" name="label" value={label.id}
+							>{label.label}</button
+						>
 					{/each}
 				</form>
 			{/await}
-			</div>
+		</div>
 	</div>
 </div>

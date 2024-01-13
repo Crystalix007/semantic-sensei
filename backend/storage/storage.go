@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
+
+	"github.com/huandu/go-sqlbuilder"
 )
 
 /// Project methods.
@@ -183,12 +185,34 @@ func (d Database) GetClassificationTask(ctx context.Context, id int64) (*Classif
 func (d Database) FindClassificationTasksForProject(
 	ctx context.Context,
 	projectID int64,
+	parameters Parameters,
 ) ([]ClassificationTask, error) {
-	rows, err := d.db.QueryContext(ctx, `
-		SELECT id, project_id, llm_input, llm_output, embedding, label_id, created_at
-		FROM classification_tasks
-		WHERE project_id = $1
-	`, projectID)
+	selectBuilder := sqlbuilder.NewSelectBuilder()
+
+	selectBuilder.Select(
+		"id",
+		"project_id",
+		"llm_input",
+		"llm_output",
+		"embedding",
+		"label_id",
+		"created_at",
+	).From(
+		"classification_tasks",
+	).Where(
+		selectBuilder.Equal("project_id", projectID),
+	).Where(
+		parameters.Where...,
+	)
+
+	if parameters.PageSize != 0 {
+		selectBuilder.Offset(int(parameters.Page) * int(parameters.PageSize))
+		selectBuilder.Limit(int(parameters.PageSize))
+	}
+
+	sql, binds := selectBuilder.Build()
+
+	rows, err := d.db.QueryContext(ctx, sql, binds...)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"storage: error finding classification tasks for project: %w",

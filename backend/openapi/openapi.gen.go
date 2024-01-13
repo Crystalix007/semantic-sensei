@@ -34,6 +34,12 @@ type ClassificationTaskLabel struct {
 	ProjectId int64     `json:"project_id"`
 }
 
+// ClassificationTaskList defines model for ClassificationTaskList.
+type ClassificationTaskList struct {
+	Data  []ClassificationTask `json:"data"`
+	Total uint64               `json:"total"`
+}
+
 // CreateClassificationTask defines model for CreateClassificationTask.
 type CreateClassificationTask struct {
 	Embedding []byte `json:"embedding"`
@@ -62,17 +68,33 @@ type Location = string
 
 // Project defines model for Project.
 type Project struct {
-	ClassificationTasks *[]ClassificationTask      `json:"classification_tasks,omitempty"`
-	CreatedAt           time.Time                  `json:"created_at"`
-	Description         string                     `json:"description"`
-	Id                  int64                      `json:"id"`
-	Labels              *[]ClassificationTaskLabel `json:"labels,omitempty"`
-	Name                string                     `json:"name"`
+	CreatedAt   time.Time                  `json:"created_at"`
+	Description string                     `json:"description"`
+	Id          int64                      `json:"id"`
+	Labels      *[]ClassificationTaskLabel `json:"labels,omitempty"`
+	Name        string                     `json:"name"`
 }
 
 // Projects defines model for Projects.
 type Projects struct {
 	Projects *[]Project `json:"projects,omitempty"`
+}
+
+// Page defines model for Page.
+type Page = uint64
+
+// PageSize defines model for PageSize.
+type PageSize = uint64
+
+// GetProjectProjectIdClassificationTasksParams defines parameters for GetProjectProjectIdClassificationTasks.
+type GetProjectProjectIdClassificationTasksParams struct {
+	Labelled *bool `form:"labelled,omitempty" json:"labelled,omitempty"`
+
+	// Page The page number
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize The number of results per page
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // PostProjectFormdataRequestBody defines body for PostProject for application/x-www-form-urlencoded ContentType.
@@ -110,6 +132,9 @@ type ServerInterface interface {
 
 	// (GET /project/{project_id}/classification_task_label/{id})
 	GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64)
+
+	// (GET /project/{project_id}/classification_tasks)
+	GetProjectProjectIdClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdClassificationTasksParams)
 
 	// (GET /projects)
 	GetProjects(w http.ResponseWriter, r *http.Request)
@@ -151,6 +176,11 @@ func (_ Unimplemented) PostProjectProjectIdClassificationTaskLabel(w http.Respon
 
 // (GET /project/{project_id}/classification_task_label/{id})
 func (_ Unimplemented) GetProjectProjectIdClassificationTaskLabelId(w http.ResponseWriter, r *http.Request, projectId int64, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /project/{project_id}/classification_tasks)
+func (_ Unimplemented) GetProjectProjectIdClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdClassificationTasksParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -366,6 +396,59 @@ func (siw *ServerInterfaceWrapper) GetProjectProjectIdClassificationTaskLabelId(
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// GetProjectProjectIdClassificationTasks operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectProjectIdClassificationTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "project_id", runtime.ParamLocationPath, chi.URLParam(r, "project_id"), &projectId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProjectProjectIdClassificationTasksParams
+
+	// ------------- Optional query parameter "labelled" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "labelled", r.URL.Query(), &params.Labelled)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "labelled", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_size", r.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectProjectIdClassificationTasks(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetProjects operation middleware
 func (siw *ServerInterfaceWrapper) GetProjects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -514,6 +597,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/project/{project_id}/classification_task_label/{id}", wrapper.GetProjectProjectIdClassificationTaskLabelId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/project/{project_id}/classification_tasks", wrapper.GetProjectProjectIdClassificationTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/projects", wrapper.GetProjects)
@@ -718,6 +804,32 @@ func (response GetProjectProjectIdClassificationTaskLabelId404Response) VisitGet
 	return nil
 }
 
+type GetProjectProjectIdClassificationTasksRequestObject struct {
+	ProjectId int64 `json:"project_id"`
+	Params    GetProjectProjectIdClassificationTasksParams
+}
+
+type GetProjectProjectIdClassificationTasksResponseObject interface {
+	VisitGetProjectProjectIdClassificationTasksResponse(w http.ResponseWriter) error
+}
+
+type GetProjectProjectIdClassificationTasks200JSONResponse ClassificationTaskList
+
+func (response GetProjectProjectIdClassificationTasks200JSONResponse) VisitGetProjectProjectIdClassificationTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectProjectIdClassificationTasks404Response struct {
+}
+
+func (response GetProjectProjectIdClassificationTasks404Response) VisitGetProjectProjectIdClassificationTasksResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
 type GetProjectsRequestObject struct {
 }
 
@@ -757,6 +869,9 @@ type StrictServerInterface interface {
 
 	// (GET /project/{project_id}/classification_task_label/{id})
 	GetProjectProjectIdClassificationTaskLabelId(ctx context.Context, request GetProjectProjectIdClassificationTaskLabelIdRequestObject) (GetProjectProjectIdClassificationTaskLabelIdResponseObject, error)
+
+	// (GET /project/{project_id}/classification_tasks)
+	GetProjectProjectIdClassificationTasks(ctx context.Context, request GetProjectProjectIdClassificationTasksRequestObject) (GetProjectProjectIdClassificationTasksResponseObject, error)
 
 	// (GET /projects)
 	GetProjects(ctx context.Context, request GetProjectsRequestObject) (GetProjectsResponseObject, error)
@@ -1011,6 +1126,33 @@ func (sh *strictHandler) GetProjectProjectIdClassificationTaskLabelId(w http.Res
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProjectProjectIdClassificationTaskLabelIdResponseObject); ok {
 		if err := validResponse.VisitGetProjectProjectIdClassificationTaskLabelIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectProjectIdClassificationTasks operation middleware
+func (sh *strictHandler) GetProjectProjectIdClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdClassificationTasksParams) {
+	var request GetProjectProjectIdClassificationTasksRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectProjectIdClassificationTasks(ctx, request.(GetProjectProjectIdClassificationTasksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectProjectIdClassificationTasks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectProjectIdClassificationTasksResponseObject); ok {
+		if err := validResponse.VisitGetProjectProjectIdClassificationTasksResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

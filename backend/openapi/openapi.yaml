@@ -134,6 +134,33 @@ paths:
         303:
           $ref: "#/components/responses/Redirect"
 
+  /project/{project_id}/classification_tasks:
+    get:
+      description: "Gets the classification tasks associated with a project"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+        - name: labelled
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        200:
+          description: "The classification tasks assigned to a project"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationTaskList"
+        404:
+          description: "The project doesn't exist"
+
   /project/{project_id}/classification_task/{id}:
     get:
       description: "Gets the classification task with the given ID"
@@ -224,10 +251,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ClassificationTaskLabel"
-        classification_tasks:
-          type: array
-          items:
-            $ref: "#/components/schemas/ClassificationTask"
+
       required:
         - id
         - name
@@ -315,6 +339,20 @@ components:
         - embedding
         - created_at
 
+    ClassificationTaskList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClassificationTask"
+        total:
+          type: integer
+          x-go-type: uint64
+      required:
+        - data
+        - total
+
     LabelTask:
       type: object
       properties:
@@ -335,3 +373,26 @@ components:
         Location:
           schema:
             $ref: "#/components/schemas/Location"
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: The page number
+      required: false
+      schema:
+        type: integer
+        format: int64
+        x-go-type: uint64
+        minimum: 0
+
+    PageSize:
+      name: page_size
+      in: query
+      description: The number of results per page
+      required: false
+      schema:
+        type: integer
+        format: int64
+        x-go-type: uint64
+        minimum: 1

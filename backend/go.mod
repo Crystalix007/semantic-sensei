@@ -17,6 +17,8 @@ require (
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/huandu/go-sqlbuilder v1.25.0 // indirect
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/invopop/yaml v0.2.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

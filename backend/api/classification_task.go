@@ -9,6 +9,7 @@ import (
 	"github.com/Crystalix007/semantic-sensei/backend/api/redirect"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
+	"github.com/huandu/go-sqlbuilder"
 )
 
 // GetProjectProjectIdClassificationTaskId retrieves a classification task
@@ -126,5 +127,66 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 		LlmInput:  task.LLMInput,
 		LlmOutput: task.LLMOutput,
 		ProjectId: task.ProjectID,
+	}, nil
+}
+
+// GetProjectProjectIdClassificationTasks gets the project classification tasks
+// for the given project, optionally filtered by whether they've been
+// completed.
+func (a *API) GetProjectProjectIdClassificationTasks(
+	ctx context.Context,
+	request openapi.GetProjectProjectIdClassificationTasksRequestObject,
+) (openapi.GetProjectProjectIdClassificationTasksResponseObject, error) {
+	var parameters storage.Parameters
+
+	if request.Params.Labelled != nil {
+		var condBuilder sqlbuilder.Cond
+
+		if *request.Params.Labelled {
+			parameters.Where = append(parameters.Where, condBuilder.IsNotNull("label_id"))
+		} else {
+			parameters.Where = append(parameters.Where, condBuilder.IsNull("label_id"))
+		}
+	}
+
+	if request.Params.Page != nil {
+		parameters.Page = *request.Params.Page
+		parameters.PageSize = storage.DefaultPageSize
+	}
+
+	if request.Params.PageSize != nil {
+		parameters.PageSize = *request.Params.PageSize
+	}
+
+	tasks, err := a.db.FindClassificationTasksForProject(
+		ctx,
+		request.ProjectId,
+		parameters,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error getting tasks for project %d: %w",
+			request.ProjectId,
+			err,
+		)
+	}
+
+	projectTasks := make([]openapi.ClassificationTask, len(tasks))
+
+	for i, task := range tasks {
+		projectTasks[i] = openapi.ClassificationTask{
+			CreatedAt: task.CreatedAt,
+			Embedding: task.Embedding,
+			Id:        task.ID,
+			LabelId:   task.LabelID,
+			LlmInput:  task.LLMInput,
+			LlmOutput: task.LLMOutput,
+			ProjectId: task.ProjectID,
+		}
+	}
+
+	return openapi.GetProjectProjectIdClassificationTasks200JSONResponse{
+		Data:  projectTasks,
+		Total: 0,
 	}, nil
 }
