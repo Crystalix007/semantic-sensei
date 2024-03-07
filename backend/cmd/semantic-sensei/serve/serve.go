@@ -67,7 +67,7 @@ func serve(cmd *cobra.Command, _ []string) error {
 
 	defer listener.Close()
 
-	log.Printf("listening on %s", listener.Addr())
+	log.Printf("listening on http://%s", listener.Addr())
 
 	return http.Serve(listener, mux)
 }
