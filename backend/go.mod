@@ -3,7 +3,9 @@ module github.com/Crystalix007/semantic-sensei/backend
 go 1.21.1
 
 require (
+	github.com/getkin/kin-openapi v0.119.0
 	github.com/go-chi/chi/v5 v5.0.11
+	github.com/huandu/go-sqlbuilder v1.25.0
 	github.com/oapi-codegen/runtime v1.1.0
 	github.com/spf13/cobra v1.8.0
 )
@@ -11,13 +13,11 @@ require (
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/getkin/kin-openapi v0.119.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.7 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/huandu/go-sqlbuilder v1.25.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/invopop/yaml v0.2.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

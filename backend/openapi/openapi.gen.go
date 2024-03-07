@@ -4,12 +4,19 @@
 package openapi
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
+	"strings"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
@@ -112,6 +119,9 @@ type PostProjectProjectIdClassificationTaskLabelFormdataRequestBody = CreateClas
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /openapi.json)
+	GetOpenapiJson(w http.ResponseWriter, r *http.Request)
+
 	// (POST /project)
 	PostProject(w http.ResponseWriter, r *http.Request)
 
@@ -143,6 +153,11 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// (GET /openapi.json)
+func (_ Unimplemented) GetOpenapiJson(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // (POST /project)
 func (_ Unimplemented) PostProject(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +212,21 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetOpenapiJson operation middleware
+func (siw *ServerInterfaceWrapper) GetOpenapiJson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOpenapiJson(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // PostProject operation middleware
 func (siw *ServerInterfaceWrapper) PostProject(w http.ResponseWriter, r *http.Request) {
@@ -578,6 +608,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/openapi.json", wrapper.GetOpenapiJson)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/project", wrapper.PostProject)
 	})
 	r.Group(func(r chi.Router) {
@@ -613,6 +646,22 @@ type RedirectResponseHeaders struct {
 }
 type RedirectResponse struct {
 	Headers RedirectResponseHeaders
+}
+
+type GetOpenapiJsonRequestObject struct {
+}
+
+type GetOpenapiJsonResponseObject interface {
+	VisitGetOpenapiJsonResponse(w http.ResponseWriter) error
+}
+
+type GetOpenapiJson200JSONResponse openapi3.T
+
+func (response GetOpenapiJson200JSONResponse) VisitGetOpenapiJsonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PostProjectRequestObject struct {
@@ -849,6 +898,9 @@ func (response GetProjects200JSONResponse) VisitGetProjectsResponse(w http.Respo
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /openapi.json)
+	GetOpenapiJson(ctx context.Context, request GetOpenapiJsonRequestObject) (GetOpenapiJsonResponseObject, error)
+
 	// (POST /project)
 	PostProject(ctx context.Context, request PostProjectRequestObject) (PostProjectResponseObject, error)
 
@@ -904,6 +956,30 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetOpenapiJson operation middleware
+func (sh *strictHandler) GetOpenapiJson(w http.ResponseWriter, r *http.Request) {
+	var request GetOpenapiJsonRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOpenapiJson(ctx, request.(GetOpenapiJsonRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOpenapiJson")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOpenapiJsonResponseObject); ok {
+		if err := validResponse.VisitGetOpenapiJsonResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // PostProject operation middleware
@@ -1182,4 +1258,103 @@ func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	} else if response != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
 	}
+}
+
+// Base64 encoded, gzipped, json marshaled Swagger object
+var swaggerSpec = []string{
+
+	"H4sIAAAAAAAC/+xZTW/jNhD9KwRboBfZcjZBsdAtbYHCRYA1mtwWgUFLY5sbieSSVD4a6L8XJCVZsilb",
+	"ihMbLfaUWPyaee/N6NF+xTHPBGfAtMLRKxZEkgw0SPtpRlZg/iagYkmFppzhCN+tAQmyAsTybAESB5ia",
+	"x99zkC84wIxkgCNsZuAAq3gNGTGbLLnMiMYRpkz/eoUDnFFGszzD0STA+kWAG4KV3fJ5tOKj8mnuVhRF",
+	"YCO6pf90ROUCQnyJJKg81QoJkKiMpCvIuTL79Yv0om+kRYAlKMGZAovk35BQCbHejfsayXKMcoY0R3oN",
+	"aCk508ASh/MT1Wv7OJZANCQmO57L2ES9BpKUbN3wmLhNXxvJ/CxhiSP8U7ghOnSjKqxXFIUNuXxulv2e",
+	"EqXokroJd0Q9WHlILkBq6pIqw5kT3UItIRpGmmYmvBIXpSVlK1wEGLIFJIn50FyyeNHe2TQx0/ZCXiIe",
+	"4JQsIJ0PWpFmc8pErhtLNmebUZ7rrmEh+TeI9YADrSa+51RCgqOvJrfWLs14Wqc3QQuaoN/XiPGF2cWE",
+	"tcvbjcHlfcgbTMfJkLOHvQUcqvQuNgnRtnaohkwdKiJPpRT12URK8mI/c03Sg/nm/oRtPNUe3sRs3n1q",
+	"dlj9HVEhWyn00PaQxDpE3SW67WDstO7zZk5bHmE0W7cHEfdaOXS8nRW0NvPFYnP0s7id55Dq6U6++QKp",
+	"pZFL6lNGJ0Rv6SuHYB3cd9QR1euk5SnhfuTafuRh+GBzKhFVu5CKxkivpCpydpIods41jyhbcpsY1akZ",
+	"u4WMME1jdAtMgaH/EaRyduViPDHbcgGMCIojfDmejD+Zfkz02gYWlmPjb8rRuQKP7fkTtLKe5osAdj2b",
+	"IiUgrnnA9gRp/58mbvoXt+1fyg633NWnycRKz5omexgRIi33Cqs4Np6ojUFbSGX0l+O75sCIZoJLJ3ei",
+	"1zjCK6rX+WIc8yxcgX6gLHygbFSurjC4xM5Y7VpVf9pmrj2z9Kdl2tezqU3bDIeiUXlceaB1PUwhghg8",
+	"oWr6NqIzrvSsHjMKBqV/48nLHiSfR09PTyNT06NcpsBinkDS3262m2vRrhwtcyh2eL0YxGuvmvDzUVlr",
+	"sSmdy8ll16Z1lGFt7B3RFTvhK02Kw+IvZ28c/oo+AkPTP3wFUGYwte6ncU/7+uruNlaY9dXG9qE2vMFu",
+	"Cex/cdwfWWdH8NGNTBHgq8lVx7W0axVKOCjEuEbwbCzfNlsbN1mEceuVMNfVG7hHsbWXIrt0T+HVjHqc",
+	"Wx+OWx74Pbg+WRPwmebT9oOuCLpbg4/co9vEAeH17COe0Ab1lD1C7Nlu3lOKwX+yoQ0QVC+29vW5Xjsc",
+	"2fOs9ML6puFvf9YsH6PBft1wmtyUN/z/lRJP0G43l8he/fUc5ZCL5B3765mrZn6gYA76BVR9l/WWOjlP",
+	"lZzbOpQ39nP7h0YYg0xEyfhHWwmnzCMMhV3/XrbCgvXDW3yQ2AawN7RhduxzZNtUb5KkQkQpHlNbWTYk",
+	"0vl9Ry9VqrPpceuHSYtyCgn2bLjgPAXC3GKfajYZhPYX3J7z7O+qp5ZxqZWeKraE0xWDBGneILvPdwJG",
+	"oOwXvz57yC+lSiO+RPWKboEp/PHfm6gu1HbirH7bBflYaTqXKY7wWmsRhWHKY5KuudLR58nnSUgEDXFx",
+	"X/wbAAD//wrybPcaIAAA",
+}
+
+// GetSwagger returns the content of the embedded swagger specification file
+// or error if failed to decode
+func decodeSpec() ([]byte, error) {
+	zipped, err := base64.StdEncoding.DecodeString(strings.Join(swaggerSpec, ""))
+	if err != nil {
+		return nil, fmt.Errorf("error base64 decoding spec: %w", err)
+	}
+	zr, err := gzip.NewReader(bytes.NewReader(zipped))
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing spec: %w", err)
+	}
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(zr)
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing spec: %w", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+var rawSpec = decodeSpecCached()
+
+// a naive cached of a decoded swagger spec
+func decodeSpecCached() func() ([]byte, error) {
+	data, err := decodeSpec()
+	return func() ([]byte, error) {
+		return data, err
+	}
+}
+
+// Constructs a synthetic filesystem for resolving external references when loading openapi specifications.
+func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
+	res := make(map[string]func() ([]byte, error))
+	if len(pathToFile) > 0 {
+		res[pathToFile] = rawSpec
+	}
+
+	return res
+}
+
+// GetSwagger returns the Swagger specification corresponding to the generated code
+// in this file. The external references of Swagger specification are resolved.
+// The logic of resolving external references is tightly connected to "import-mapping" feature.
+// Externally referenced files must be embedded in the corresponding golang packages.
+// Urls can be supported but this task was out of the scope.
+func GetSwagger() (swagger *openapi3.T, err error) {
+	resolvePath := PathToRawSpec("")
+
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = true
+	loader.ReadFromURIFunc = func(loader *openapi3.Loader, url *url.URL) ([]byte, error) {
+		pathToFile := url.String()
+		pathToFile = path.Clean(pathToFile)
+		getSpec, ok := resolvePath[pathToFile]
+		if !ok {
+			err1 := fmt.Errorf("path not found: %s", pathToFile)
+			return nil, err1
+		}
+		return getSpec()
+	}
+	var specData []byte
+	specData, err = rawSpec()
+	if err != nil {
+		return
+	}
+	swagger, err = loader.LoadFromData(specData)
+	if err != nil {
+		return
+	}
+	return
 }

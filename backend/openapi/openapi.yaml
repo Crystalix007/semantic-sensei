@@ -221,6 +221,20 @@ paths:
         404:
           description: "The classification task with the given ID does not exist"
 
+  /openapi.json:
+    get:
+      description: Gets the OpenAPI specification
+      responses:
+        200:
+          description: The OpenAPI specification
+          content:
+            application/json:
+              schema:
+                type: object
+                x-go-type: openapi3.T
+                x-go-type-import:
+                  path: github.com/getkin/kin-openapi/openapi3
+
 components:
   schemas:
     CreateProject:
