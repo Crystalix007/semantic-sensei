@@ -15,7 +15,7 @@
 					Project {data.project.name} (#{data.project.id})
 				</h2>
 			{/await}
-			<a class="border-zinc-200 shadow-protruding rounded-md" href="/"
+			<a class="ml-1 border-zinc-200 shadow-protruding rounded-md" href="/"
 				><BxX /></a
 			>
 		</div>
