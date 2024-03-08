@@ -3,12 +3,15 @@ package serve
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 
 	"github.com/Crystalix007/semantic-sensei/backend/api"
+	"github.com/go-chi/chi/v5"
 	"github.com/spf13/cobra"
 )
 
@@ -40,11 +43,13 @@ func serve(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to create API: %w", err)
 	}
 
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 
-	mux.Handle("/api/", api)
+	mux.Handle("/api/*", api)
 
 	if dev, err := cmd.Flags().GetString("dev"); err == nil && dev != "" {
+		slog.SetDefault(getDevLogger())
+
 		devURL, err := url.Parse(dev)
 		if err != nil {
 			return fmt.Errorf("failed to parse dev URL: %w", err)
@@ -52,7 +57,11 @@ func serve(cmd *cobra.Command, _ []string) error {
 
 		reverseProxy := httputil.NewSingleHostReverseProxy(devURL)
 
-		mux.Handle("/", reverseProxy)
+		mux.Handle("/*", reverseProxy)
+
+		// Serve OpenAPI documentation.
+		mux.Handle("/api", reverseProxy)
+		mux.Get("/api/", http.RedirectHandler("/api", http.StatusMovedPermanently).ServeHTTP)
 	}
 
 	address, err := cmd.Flags().GetString("address")
@@ -70,4 +79,14 @@ func serve(cmd *cobra.Command, _ []string) error {
 	log.Printf("listening on http://%s", listener.Addr())
 
 	return http.Serve(listener, mux)
+}
+
+func getDevLogger() *slog.Logger {
+	programLevel := new(slog.LevelVar)
+
+	programLevel.Set(slog.LevelDebug)
+
+	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+
+	return slog.New(handler)
 }
