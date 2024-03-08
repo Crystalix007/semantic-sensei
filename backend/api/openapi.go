@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/Crystalix007/semantic-sensei/backend/api/url"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
@@ -29,8 +28,6 @@ func (a *API) GetOpenapiJson(
 	if url == nil {
 		return nil, ErrUnableToGetURL
 	}
-
-	slog.DebugContext(ctx, "api: serving OpenAPI schema", slog.Any("url", url))
 
 	if host := url.Host; host != "" {
 		apiURL := *url
