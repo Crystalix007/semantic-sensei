@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Crystalix007/semantic-sensei/backend/api/headers"
+	"github.com/Crystalix007/semantic-sensei/backend/api/url"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 	"github.com/go-chi/chi/v5"
@@ -32,8 +33,14 @@ var _ http.Handler = (*API)(nil)
 func New(ctx context.Context, opts ...Option) (*API, error) {
 	chi := chi.NewMux()
 
+	// Resolve request URLs to their absolute representation.
+	chi.Use(url.Absolute)
+
 	// Store request headers in the context.
 	chi.Use(headers.Store)
+
+	// Store URL in the context.
+	chi.Use(url.Store)
 
 	a := &API{
 		handler: chi,
