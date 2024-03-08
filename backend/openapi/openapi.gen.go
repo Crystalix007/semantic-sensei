@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ClassificationTask defines model for ClassificationTask.
@@ -49,9 +50,9 @@ type ClassificationTaskList struct {
 
 // CreateClassificationTask defines model for CreateClassificationTask.
 type CreateClassificationTask struct {
-	Embedding []byte `json:"embedding"`
-	LlmInput  string `json:"llm_input"`
-	LlmOutput string `json:"llm_output"`
+	Embedding openapi_types.File `json:"embedding"`
+	LlmInput  string             `json:"llm_input"`
+	LlmOutput string             `json:"llm_output"`
 }
 
 // CreateClassificationTaskLabel defines model for CreateClassificationTaskLabel.
@@ -106,6 +107,9 @@ type GetProjectProjectIdClassificationTasksParams struct {
 
 // PostProjectFormdataRequestBody defines body for PostProject for application/x-www-form-urlencoded ContentType.
 type PostProjectFormdataRequestBody = CreateProject
+
+// PostProjectProjectIdClassificationTaskJSONRequestBody defines body for PostProjectProjectIdClassificationTask for application/json ContentType.
+type PostProjectProjectIdClassificationTaskJSONRequestBody = CreateClassificationTask
 
 // PostProjectProjectIdClassificationTaskFormdataRequestBody defines body for PostProjectProjectIdClassificationTask for application/x-www-form-urlencoded ContentType.
 type PostProjectProjectIdClassificationTaskFormdataRequestBody = CreateClassificationTask
@@ -715,8 +719,9 @@ func (response GetProjectId404Response) VisitGetProjectIdResponse(w http.Respons
 }
 
 type PostProjectProjectIdClassificationTaskRequestObject struct {
-	ProjectId int64 `json:"project_id"`
-	Body      *PostProjectProjectIdClassificationTaskFormdataRequestBody
+	ProjectId    int64 `json:"project_id"`
+	JSONBody     *PostProjectProjectIdClassificationTaskJSONRequestBody
+	FormdataBody *PostProjectProjectIdClassificationTaskFormdataRequestBody
 }
 
 type PostProjectProjectIdClassificationTaskResponseObject interface {
@@ -1048,17 +1053,27 @@ func (sh *strictHandler) PostProjectProjectIdClassificationTask(w http.ResponseW
 	var request PostProjectProjectIdClassificationTaskRequestObject
 
 	request.ProjectId = projectId
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 
-	if err := r.ParseForm(); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
-		return
+		var body PostProjectProjectIdClassificationTaskJSONRequestBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+		request.JSONBody = &body
 	}
-	var body PostProjectProjectIdClassificationTaskFormdataRequestBody
-	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
-		return
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+			return
+		}
+		var body PostProjectProjectIdClassificationTaskFormdataRequestBody
+		if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
+			return
+		}
+		request.FormdataBody = &body
 	}
-	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.PostProjectProjectIdClassificationTask(ctx, request.(PostProjectProjectIdClassificationTaskRequestObject))
@@ -1263,28 +1278,28 @@ func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xZTW/jNhD9KwRboBfZcjZBsdAtbYHCRYA1mtwWgUFLY5sbieSSVD4a6L8XJCVZsilb",
-	"ihMbLfaUWPyaee/N6NF+xTHPBGfAtMLRKxZEkgw0SPtpRlZg/iagYkmFppzhCN+tAQmyAsTybAESB5ia",
-	"x99zkC84wIxkgCNsZuAAq3gNGTGbLLnMiMYRpkz/eoUDnFFGszzD0STA+kWAG4KV3fJ5tOKj8mnuVhRF",
-	"YCO6pf90ROUCQnyJJKg81QoJkKiMpCvIuTL79Yv0om+kRYAlKMGZAovk35BQCbHejfsayXKMcoY0R3oN",
-	"aCk508ASh/MT1Wv7OJZANCQmO57L2ES9BpKUbN3wmLhNXxvJ/CxhiSP8U7ghOnSjKqxXFIUNuXxulv2e",
-	"EqXokroJd0Q9WHlILkBq6pIqw5kT3UItIRpGmmYmvBIXpSVlK1wEGLIFJIn50FyyeNHe2TQx0/ZCXiIe",
-	"4JQsIJ0PWpFmc8pErhtLNmebUZ7rrmEh+TeI9YADrSa+51RCgqOvJrfWLs14Wqc3QQuaoN/XiPGF2cWE",
-	"tcvbjcHlfcgbTMfJkLOHvQUcqvQuNgnRtnaohkwdKiJPpRT12URK8mI/c03Sg/nm/oRtPNUe3sRs3n1q",
-	"dlj9HVEhWyn00PaQxDpE3SW67WDstO7zZk5bHmE0W7cHEfdaOXS8nRW0NvPFYnP0s7id55Dq6U6++QKp",
-	"pZFL6lNGJ0Rv6SuHYB3cd9QR1euk5SnhfuTafuRh+GBzKhFVu5CKxkivpCpydpIods41jyhbcpsY1akZ",
-	"u4WMME1jdAtMgaH/EaRyduViPDHbcgGMCIojfDmejD+Zfkz02gYWlmPjb8rRuQKP7fkTtLKe5osAdj2b",
-	"IiUgrnnA9gRp/58mbvoXt+1fyg633NWnycRKz5omexgRIi33Cqs4Np6ojUFbSGX0l+O75sCIZoJLJ3ei",
-	"1zjCK6rX+WIc8yxcgX6gLHygbFSurjC4xM5Y7VpVf9pmrj2z9Kdl2tezqU3bDIeiUXlceaB1PUwhghg8",
-	"oWr6NqIzrvSsHjMKBqV/48nLHiSfR09PTyNT06NcpsBinkDS3262m2vRrhwtcyh2eL0YxGuvmvDzUVlr",
-	"sSmdy8ll16Z1lGFt7B3RFTvhK02Kw+IvZ28c/oo+AkPTP3wFUGYwte6ncU/7+uruNlaY9dXG9qE2vMFu",
-	"Cex/cdwfWWdH8NGNTBHgq8lVx7W0axVKOCjEuEbwbCzfNlsbN1mEceuVMNfVG7hHsbWXIrt0T+HVjHqc",
-	"Wx+OWx74Pbg+WRPwmebT9oOuCLpbg4/co9vEAeH17COe0Ab1lD1C7Nlu3lOKwX+yoQ0QVC+29vW5Xjsc",
-	"2fOs9ML6puFvf9YsH6PBft1wmtyUN/z/lRJP0G43l8he/fUc5ZCL5B3765mrZn6gYA76BVR9l/WWOjlP",
-	"lZzbOpQ39nP7h0YYg0xEyfhHWwmnzCMMhV3/XrbCgvXDW3yQ2AawN7RhduxzZNtUb5KkQkQpHlNbWTYk",
-	"0vl9Ry9VqrPpceuHSYtyCgn2bLjgPAXC3GKfajYZhPYX3J7z7O+qp5ZxqZWeKraE0xWDBGneILvPdwJG",
-	"oOwXvz57yC+lSiO+RPWKboEp/PHfm6gu1HbirH7bBflYaTqXKY7wWmsRhWHKY5KuudLR58nnSUgEDXFx",
-	"X/wbAAD//wrybPcaIAAA",
+	"H4sIAAAAAAAC/+xZ3W7jNhN9FYLfB/RGtpxNUCx0t22BIkWADZrcLQKDlsY2NxLJJan8NNC7FyRlWbIo",
+	"m4qdBC16lVjkDGfOnDkeyi845YXgDJhWOHnBgkhSgAZpP12TFZi/GahUUqEpZzjBt2tAgqwAsbJYgMQR",
+	"pubxjxLkM44wIwXgBJsdOMIqXUNBjJMllwXROMGU6Z8vcIQLymhRFjiZRVg/C3BLsLIunyYrPqmfls6i",
+	"qiIb0Q39ayAqFxDiSyRBlblWSIBEdSRDQc6V8RcW6VlopFWEJSjBmQKL5J+QUQmp7sf9Bcl6jXKGNEd6",
+	"DWgpOdPAMofzI9Vr+ziVQDRkJjteytREvQaS1dW64ilxTl9ayfxfwhIn+H/xttCxW1VxY1FVNuT6uTH7",
+	"NSdK0SV1G26Jurf0kFyA1NQlVYczJ7qDWkY0TDQtTHg1LkpLyla4ijAUC8gy86FtsnjW3t00M9v2Ql4j",
+	"HuGcLCCfj7LIizllotQtk+3ZZpWXemhZSP4dUj3iQMuJHyWVkOHkm8mt46UdT+f0NmhRG/S7BjG+MF5M",
+	"WP26XRlcTlO80eV4N+TsYa8BhyrdxyYj2vYO1VCoQ03k6ZSqOZtISZ7tZ65JfjDf0p+wjWfjw5uYzTuk",
+	"Zwf6jzJiddHbBa/skZ0kAtg9JrUBWg/RbjcYu234vGvHLg812uLtQcR9sRw63u6KOs58sdgc/XXczXNM",
+	"/wwn3/4KachRSupjxiBEr1GWQ7COVh51RP86anmaOKy4VpE8FT4oTzWiqg+paK0EJbUpTi+JqneueUTZ",
+	"ktvEqM7N2g0UhGmaohtgCkz5H0AqN7CcTWfGLRfAiKA4wefT2fSTUWSi1zawuF6bfleunCvwDD6/g1Z2",
+	"qvkqgH25vkRKQNrUAdsTpP3/MnPbvzq3fyi73JmvPs1mlnp2bLKHESHy2le8iWM7FXUx6BKpjv58ette",
+	"mNBCcOnoTvQaJ3hF9bpcTFNexCvQ95TF95RNausNBufYjVb9YdWfttsdi1ZzceVBz8mUQgQxeESb7bug",
+	"XXOlr5s1Q1JQ+heePe8B62ny+Pg4MW07KWUOLOUZZOEzZVc/q25zaFlC1Svd2ajSBdHeD/lmfhbb7jif",
+	"nQ85baKMm+m9W534hWbVYX7Xu7dj/Io+AEOXv/k4XmdwaUec1mXs24u7wFjuNfcXKzVdeKM+y/d/N9wd",
+	"2UpH1GMYmSrCF7OLgbvnkBXKOCjEuEbwZOa63WptR8YqTjuqP9ebL9mAZuuaImu6p/GainrGs5Aadwbd",
+	"U9Q6RATGlXlw/DT4n1xbvOe8q8wMRTCsOD7OHK0+B/gcKE+e0EZJ1R5+B6rYKRke/SN1cgShgqq1Tz6D",
+	"PBwppZZ6cXNH8auqHbOP4WCYyF5mV/XbgX8VE99hlNteP4P09SPaoRTZCfX1g7tmfqBhDo4haPMe7DV9",
+	"8jFdcveu15LBu/5Hzw+tMEYNEXXF33qUcMw8YqCw9qcaKyxY/80Wb0S2EdUbK5gDfo6UTfUqSipElOIp",
+	"tZ1lQyKDr1GCWKk+jI87P2palHPIsMfhgvMcCHPGPtZsM4jtr7+B++xvsu9N45orgSy2BacrBhnSvFXs",
+	"kFcNhqDsJz8/A+iXU6URX6LGYphgCr/96xg1hFovzs3vwiAfNpwuZY4TvNZaJHGc85Tka6508nn2eRYT",
+	"QWNc3VV/BwAA//+0q2ZDViAAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

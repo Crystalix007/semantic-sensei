@@ -48,12 +48,43 @@ func (a API) PostProjectProjectIdClassificationTask(
 	ctx context.Context,
 	params openapi.PostProjectProjectIdClassificationTaskRequestObject,
 ) (openapi.PostProjectProjectIdClassificationTaskResponseObject, error) {
-	taskID, err := a.db.CreateClassificationTask(ctx, storage.ClassificationTask{
-		ProjectID: params.ProjectId,
-		LLMInput:  params.Body.LlmInput,
-		LLMOutput: params.Body.LlmOutput,
-		Embedding: params.Body.Embedding,
-	})
+	var classificationTask storage.ClassificationTask
+
+	if params.JSONBody != nil {
+		embedding, err := params.JSONBody.Embedding.Bytes()
+		if err != nil {
+			return nil, fmt.Errorf(
+				"api: error reading embedding: %w",
+				err,
+			)
+		}
+
+		classificationTask = storage.ClassificationTask{
+			ProjectID: params.ProjectId,
+			LLMInput:  params.JSONBody.LlmInput,
+			LLMOutput: params.JSONBody.LlmOutput,
+			Embedding: embedding,
+		}
+	}
+
+	if params.FormdataBody != nil {
+		embedding, err := params.FormdataBody.Embedding.Bytes()
+		if err != nil {
+			return nil, fmt.Errorf(
+				"api: error reading embedding: %w",
+				err,
+			)
+		}
+
+		classificationTask = storage.ClassificationTask{
+			ProjectID: params.ProjectId,
+			LLMInput:  params.FormdataBody.LlmInput,
+			LLMOutput: params.FormdataBody.LlmOutput,
+			Embedding: embedding,
+		}
+	}
+
+	taskID, err := a.db.CreateClassificationTask(ctx, classificationTask)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error creating classification task: %w",

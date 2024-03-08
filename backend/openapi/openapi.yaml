@@ -124,6 +124,9 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               $ref: "#/components/schemas/CreateClassificationTask"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClassificationTask"
       responses:
         201:
           description: "The created classification task"
@@ -317,7 +320,7 @@ components:
           type: string
         embedding:
           type: string
-          format: byte
+          format: binary
       required:
         - llm_input
         - llm_output
