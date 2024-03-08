@@ -77,7 +77,7 @@ func New(ctx context.Context, opts ...Option) (*API, error) {
 // ServeHTTP handles the HTTP requests for the API.
 // It delegates the request to the underlying handler.
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	slog.InfoContext(r.Context(), "serving request", "path", r.URL.Path)
+	slog.InfoContext(r.Context(), "serving request", slog.String("method", r.Method), slog.String("path", r.URL.Path))
 
 	a.handler.ServeHTTP(w, r)
 }
