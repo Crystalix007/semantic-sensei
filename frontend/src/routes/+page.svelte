@@ -4,7 +4,7 @@
 	export let data: Promise<Projects>;
 </script>
 
-<div class="top-page">
+<div class="top-page m-8">
 	<h2 class="text-4xl">Semantic Sensei - Build Your Own Semantic Classifier</h2>
 	<p class="pt-2">
 		Manually label samples of LLM text output, and train a classifier to label
