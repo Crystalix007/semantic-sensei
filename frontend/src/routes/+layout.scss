@@ -23,7 +23,7 @@
 }
 
 .top-page {
-	@apply mt-12;
+	@apply m-4 md:m-8 lg:mt-12;
 	@include page;
 }
 

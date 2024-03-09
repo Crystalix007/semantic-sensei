@@ -6,7 +6,7 @@
 </script>
 
 <div class="top-page">
-	<div class="border-2 rounded-lg p-6 flex flex-col gap-4 m-8">
+	<div class="border-2 rounded-lg p-6 flex flex-col gap-4">
 		<div class="flex items-center justify-between">
 			{#await data}
 				<h2 class="page-title">Loading...</h2>
