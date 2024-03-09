@@ -4,7 +4,7 @@
 </script>
 
 <div class="w-screen max-w-full min-h-screen flex flex-col">
-	<div class="sticky top-0 shadow-lg border-md flex px-3 py-2 bg-zinc-50">
+	<div class="sticky top-0 shadow-lg border-md flex px-3 md:px-8 py-2 bg-zinc-50">
 		<div class="flex-initial flex flex-col items-center">
 			<h1 class="text-2xl">
 				<a href="/">Semantic Sensei</a>
