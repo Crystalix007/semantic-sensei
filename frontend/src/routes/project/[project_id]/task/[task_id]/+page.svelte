@@ -6,7 +6,7 @@
 </script>
 
 <div class="top-page">
-	<div class="border-2 rounded-lg p-6 flex flex-col gap-4">
+	<div class="border-2 rounded-lg p-6 flex flex-col gap-4 m-8">
 		<div class="flex items-center justify-between">
 			{#await data}
 				<h2 class="page-title">Loading...</h2>
@@ -26,16 +26,16 @@
 				<div class="flex justify-between gap-4">
 					<div>
 						<div class="text-lg font-semibold pb-1">Input</div>
-						<pre>{data.task.llm_input}</pre>
+						<pre class="whitespace-pre-wrap">{data.task.llm_input}</pre>
 					</div>
 					<div>
 						<div class="text-lg font-semibold pb-1">Output</div>
-						<pre>{data.task.llm_output}</pre>
+						<pre class="whitespace-pre-wrap">{data.task.llm_output}</pre>
 					</div>
 				</div>
 				<hr class="h-px border-0 bg-slate-300 mt-3 mb-2" />
 				<form
-					class="w-full flex flex-wrap gap-1"
+					class="w-full flex flex-wrap justify-end gap-1"
 					action={data.label_endpoint}
 					method="post"
 				>
