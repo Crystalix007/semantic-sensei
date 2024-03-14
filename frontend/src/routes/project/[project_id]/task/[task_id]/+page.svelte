@@ -5,29 +5,37 @@
 	export let data: Promise<PageProps>;
 </script>
 
-<style lang="scss">
-	details.hide-marker > summary:first-of-type::marker {
-		@apply transition-all;
+<style lang="postcss">
+	@media (max-width: theme('screens.md')) {
+		details.hide-marker > summary:first-of-type::marker {
+			@apply transition-all;
+		}
+
+		details.hide-marker > summary:first-of-type::-webkit-details-marker {
+			@apply transition-all;
+		}
+
+		details.hide-marker > summary:first-of-type {
+			@apply cursor-pointer;
+		}
+
+		details[open].hide-marker > summary:first-of-type {
+			@apply list-none;
+		}
+
+		details[open].hide-marker > summary:first-of-type::-moz-list-bullet {
+			@apply list-none block text-transparent w-0 m-0;
+		}
+
+		details[open].hide-marker > summary:first-of-type::-webkit-details-marker {
+			@apply invisible w-0 m-0;
+		}
 	}
 
-	details.hide-marker > summary:first-of-type::-webkit-details-marker {
-		@apply transition-all;
-	}
-
-	details.hide-marker > summary:first-of-type {
-		@apply cursor-pointer;
-	}
-
-	details[open].hide-marker > summary:first-of-type {
-		@apply list-none;
-	}
-
-	details[open].hide-marker > summary:first-of-type::-moz-list-bullet {
-		@apply list-none block text-transparent w-0 m-0;
-	}
-
-	details[open].hide-marker > summary:first-of-type::-webkit-details-marker {
-		@apply invisible w-0 m-0;
+	@screen md {
+		details.hide-marker > summary:first-of-type {
+			@apply list-none pointer-events-none;
+		}
 	}
 </style>
 

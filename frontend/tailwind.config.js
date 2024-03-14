@@ -1,7 +1,12 @@
+const defaultTheme = require("tailwindcss/defaultTheme");
+
 /** @type {import('tailwindcss').Config} */
 export default {
 	content: ["./src/**/*.{html,ts,svelte}"],
 	theme: {
+		screens: {
+			...defaultTheme.screens,
+		},
 		extend: {
 			minWidth: {
 				screen: "100vw",
