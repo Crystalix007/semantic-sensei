@@ -5,6 +5,28 @@
 	export let data: Promise<PageProps>;
 </script>
 
+<style lang="scss">
+	details.hide-marker > summary:first-of-type::marker {
+		@apply transition-all;
+	}
+
+	details.hide-marker > summary:first-of-type::-webkit-details-marker {
+		@apply transition-all;
+	}
+
+	details[open].hide-marker > summary:first-of-type {
+		@apply list-none;
+	}
+
+	details[open].hide-marker > summary:first-of-type::-moz-list-bullet {
+		@apply list-none block text-transparent w-0 m-0;
+	}
+
+	details[open].hide-marker > summary:first-of-type::-webkit-details-marker {
+		@apply invisible w-0 m-0;
+	}
+</style>
+
 <div class="top-page">
 	<div class="border-2 rounded-lg p-6 flex flex-col gap-4">
 		<div class="flex items-center justify-between">
@@ -23,11 +45,11 @@
 			{:then data}
 				<p>Created {new Date(data.task.created_at).toLocaleString()}</p>
 				<hr class="h-px border-0 bg-slate-300 my-2" />
-				<div class="flex justify-between gap-4">
-					<div>
-						<div class="text-lg font-semibold pb-1">Input</div>
+				<div class="flex flex-col justify-between gap-4">
+					<details open class="hide-marker">
+						<summary class="text-lg font-semibold pb-1">Input</summary>
 						<pre class="whitespace-pre-wrap">{data.task.llm_input}</pre>
-					</div>
+					</details>
 					<div>
 						<div class="text-lg font-semibold pb-1">Output</div>
 						<pre class="whitespace-pre-wrap">{data.task.llm_output}</pre>
