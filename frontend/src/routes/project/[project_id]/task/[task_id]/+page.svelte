@@ -14,6 +14,10 @@
 		@apply transition-all;
 	}
 
+	details.hide-marker > summary:first-of-type {
+		@apply cursor-pointer;
+	}
+
 	details[open].hide-marker > summary:first-of-type {
 		@apply list-none;
 	}
