@@ -36,7 +36,7 @@
 				<hr class="h-px border-0 bg-slate-300 mt-3 mb-2" />
 				<div class="w-full sticky bottom-4">
 					<form
-						class="ml-auto w-fit flex flex-wrap justify-between md:justify-end gap-2 md:gap-3 bg-white border-slate-300 border-2 b-1 p-4 rounded-md"
+						class="ml-auto w-fit flex flex-wrap justify-between md:justify-end gap-2 md:gap-3 bg-white border-slate-300 border-2 b-1 p-2 md:p-3 rounded-md"
 						action={data.label_endpoint}
 						method="post"
 					>
