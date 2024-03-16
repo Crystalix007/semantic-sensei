@@ -136,8 +136,6 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 
 	task.LabelID = &request.Body.Label
 
-	fmt.Printf("Updating classification task to %#v, with label %#v\n", *task, *task.LabelID)
-
 	err = a.db.UpdateClassificationTask(ctx, *task)
 	if err != nil {
 		return nil, fmt.Errorf(
