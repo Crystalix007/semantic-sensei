@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS classification_tasks (
+CREATE TABLE IF NOT EXISTS pending_classification_tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
     llm_input TEXT NOT NULL,
