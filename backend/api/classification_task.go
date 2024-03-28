@@ -9,7 +9,6 @@ import (
 	"github.com/Crystalix007/semantic-sensei/backend/api/redirect"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
-	"github.com/huandu/go-sqlbuilder"
 )
 
 // GetProjectProjectIdClassificationTaskId retrieves a classification task
@@ -18,6 +17,26 @@ func (a API) GetProjectProjectIdClassificationTaskId(
 	ctx context.Context,
 	params openapi.GetProjectProjectIdClassificationTaskIdRequestObject,
 ) (openapi.GetProjectProjectIdClassificationTaskIdResponseObject, error) {
+	pendingTask, err := a.db.GetPendingClassificationTask(ctx, params.Id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf(
+			"api: error getting pending classification task %d: %w",
+			params.Id,
+			err,
+		)
+	}
+
+	if err == nil {
+		return openapi.GetProjectProjectIdClassificationTaskId200JSONResponse{
+			CreatedAt: pendingTask.CreatedAt,
+			Embedding: pendingTask.Embedding,
+			Id:        pendingTask.ID,
+			LlmInput:  pendingTask.LLMInput,
+			LlmOutput: pendingTask.LLMOutput,
+			ProjectId: pendingTask.ProjectID,
+		}, nil
+	}
+
 	task, err := a.db.GetClassificationTask(ctx, params.Id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return openapi.GetProjectProjectIdClassificationTaskId404Response{}, nil
@@ -48,7 +67,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 	ctx context.Context,
 	params openapi.PostProjectProjectIdClassificationTaskRequestObject,
 ) (openapi.PostProjectProjectIdClassificationTaskResponseObject, error) {
-	var classificationTask storage.ClassificationTask
+	var pendingClassificationTask storage.PendingClassificationTask
 
 	if params.JSONBody != nil {
 		embedding, err := params.JSONBody.Embedding.Bytes()
@@ -59,7 +78,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 			)
 		}
 
-		classificationTask = storage.ClassificationTask{
+		pendingClassificationTask = storage.PendingClassificationTask{
 			ProjectID: params.ProjectId,
 			LLMInput:  params.JSONBody.LlmInput,
 			LLMOutput: params.JSONBody.LlmOutput,
@@ -76,7 +95,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 			)
 		}
 
-		classificationTask = storage.ClassificationTask{
+		pendingClassificationTask = storage.PendingClassificationTask{
 			ProjectID: params.ProjectId,
 			LLMInput:  params.FormdataBody.LlmInput,
 			LLMOutput: params.FormdataBody.LlmOutput,
@@ -84,7 +103,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 		}
 	}
 
-	taskID, err := a.db.CreateClassificationTask(ctx, classificationTask)
+	taskID, err := a.db.CreatePendingClassificationTask(ctx, pendingClassificationTask)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error creating classification task: %w",
@@ -96,7 +115,7 @@ func (a API) PostProjectProjectIdClassificationTask(
 		return redirect.To(fmt.Sprintf("/project/%d/task/%d", params.ProjectId, taskID))
 	}
 
-	task, err := a.db.GetClassificationTask(ctx, taskID)
+	task, err := a.db.GetPendingClassificationTask(ctx, taskID)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error getting created classification task %d: %w",
@@ -109,7 +128,6 @@ func (a API) PostProjectProjectIdClassificationTask(
 		CreatedAt: task.CreatedAt,
 		Embedding: task.Embedding,
 		Id:        taskID,
-		LabelId:   task.LabelID,
 		LlmInput:  task.LLMInput,
 		LlmOutput: task.LLMOutput,
 		ProjectId: task.ProjectID,
@@ -122,7 +140,7 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 	ctx context.Context,
 	request openapi.PostProjectProjectIdClassificationTaskIdLabelRequestObject,
 ) (openapi.PostProjectProjectIdClassificationTaskIdLabelResponseObject, error) {
-	task, err := a.db.GetClassificationTask(ctx, request.Id)
+	pendingTask, err := a.db.GetPendingClassificationTask(ctx, request.Id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return openapi.PostProjectProjectIdClassificationTaskIdLabel404Response{}, nil
 	}
@@ -134,12 +152,26 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 		)
 	}
 
-	task.LabelID = &request.Body.Label
+	classificationTask := storage.ClassificationTask{
+		ProjectID: pendingTask.ProjectID,
+		LLMInput:  pendingTask.LLMInput,
+		LLMOutput: pendingTask.LLMOutput,
+		Embedding: pendingTask.Embedding,
+		LabelID:   request.Body.Label,
+	}
 
-	err = a.db.UpdateClassificationTask(ctx, *task)
+	_, err = a.db.CreateClassificationTask(ctx, classificationTask)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error updating classification task: %w",
+			err,
+		)
+	}
+
+	err = a.db.DeletePendingClassificationTask(ctx, request.Id)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error deleting pending classification task: %w",
 			err,
 		)
 	}
@@ -149,13 +181,13 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 	}
 
 	return openapi.PostProjectProjectIdClassificationTaskIdLabel200JSONResponse{
-		CreatedAt: task.CreatedAt,
-		Embedding: task.Embedding,
-		Id:        task.ID,
-		LabelId:   task.LabelID,
-		LlmInput:  task.LLMInput,
-		LlmOutput: task.LLMOutput,
-		ProjectId: task.ProjectID,
+		CreatedAt: classificationTask.CreatedAt,
+		Embedding: classificationTask.Embedding,
+		Id:        classificationTask.ID,
+		LabelId:   classificationTask.LabelID,
+		LlmInput:  classificationTask.LLMInput,
+		LlmOutput: classificationTask.LLMOutput,
+		ProjectId: classificationTask.ProjectID,
 	}, nil
 }
 
@@ -167,16 +199,6 @@ func (a *API) GetProjectProjectIdClassificationTasks(
 	request openapi.GetProjectProjectIdClassificationTasksRequestObject,
 ) (openapi.GetProjectProjectIdClassificationTasksResponseObject, error) {
 	var parameters storage.Parameters
-
-	if request.Params.Labelled != nil {
-		var condBuilder sqlbuilder.Cond
-
-		if *request.Params.Labelled {
-			parameters.Where = append(parameters.Where, condBuilder.IsNotNull("label_id"))
-		} else {
-			parameters.Where = append(parameters.Where, condBuilder.IsNull("label_id"))
-		}
-	}
 
 	if request.Params.Page != nil {
 		parameters.Page = *request.Params.Page
@@ -215,6 +237,51 @@ func (a *API) GetProjectProjectIdClassificationTasks(
 	}
 
 	return openapi.GetProjectProjectIdClassificationTasks200JSONResponse{
+		Data:  projectTasks,
+		Total: 0,
+	}, nil
+}
+
+// GetProjectProjectIdPendingClassificationTasks gets the pending classification
+// tasks for the given project.
+func (a *API) GetProjectProjectIdPendingClassificationTasks(
+	ctx context.Context,
+	request openapi.GetProjectProjectIdPendingClassificationTasksRequestObject,
+) (openapi.GetProjectProjectIdPendingClassificationTasksResponseObject, error) {
+	var parameters storage.Parameters
+
+	if request.Params.Page != nil {
+		parameters.Page = *request.Params.Page
+		parameters.PageSize = storage.DefaultPageSize
+	}
+
+	if request.Params.PageSize != nil {
+		parameters.PageSize = *request.Params.PageSize
+	}
+
+	tasks, err := a.db.FindPendingClassificationTasksForProject(ctx, request.ProjectId, parameters)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error getting pending tasks for project %d: %w",
+			request.ProjectId,
+			err,
+		)
+	}
+
+	projectTasks := make([]openapi.PendingClassificationTask, len(tasks))
+
+	for i, task := range tasks {
+		projectTasks[i] = openapi.PendingClassificationTask{
+			CreatedAt: task.CreatedAt,
+			Embedding: task.Embedding,
+			Id:        task.ID,
+			LlmInput:  task.LLMInput,
+			LlmOutput: task.LLMOutput,
+			ProjectId: task.ProjectID,
+		}
+	}
+
+	return openapi.GetProjectProjectIdPendingClassificationTasks200JSONResponse{
 		Data:  projectTasks,
 		Total: 0,
 	}, nil

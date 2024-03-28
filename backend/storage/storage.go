@@ -123,6 +123,165 @@ func (d Database) DeleteProject(ctx context.Context, id int64) error {
 	return nil
 }
 
+/// PendingClassificationTask methods.
+
+// CreatePendingClassificationTask creates a new pending classification task in
+// the database and returns the ID of the newly created pending classification
+// task.
+func (d Database) CreatePendingClassificationTask(ctx context.Context, pct PendingClassificationTask) (int64, error) {
+	var id int64
+
+	err := d.db.QueryRowContext(ctx, `
+		INSERT INTO pending_classification_tasks (
+			project_id,
+			llm_input,
+			llm_output,
+			embedding
+		)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id
+	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput, pct.Embedding).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"storage: error creating pending classification task: %w",
+			err,
+		)
+	}
+
+	return id, nil
+}
+
+// GetPendingClassificationTask returns the pending classification task with the
+// provided ID.
+func (d Database) GetPendingClassificationTask(ctx context.Context, id int64) (*PendingClassificationTask, error) {
+	var pct PendingClassificationTask
+
+	err := d.db.QueryRowContext(ctx, `
+		SELECT id, project_id, llm_input, llm_output, created_at, embedding
+		FROM pending_classification_tasks
+		WHERE id = $1
+	`, id).Scan(
+		&pct.ID,
+		&pct.ProjectID,
+		&pct.LLMInput,
+		&pct.LLMOutput,
+		&pct.CreatedAt,
+		&pct.Embedding,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting pending classification task: %w",
+			err,
+		)
+	}
+
+	return &pct, nil
+}
+
+// FindPendingClassificationTasksForProject returns a list of pending
+// classification tasks for the specified project ID.
+func (d Database) FindPendingClassificationTasksForProject(
+	ctx context.Context,
+	projectID int64,
+	parameters Parameters,
+) ([]PendingClassificationTask, error) {
+	selectBuilder := sqlbuilder.NewSelectBuilder()
+
+	selectBuilder.Select(
+		"id",
+		"project_id",
+		"llm_input",
+		"llm_output",
+		"embedding",
+		"created_at",
+	).From(
+		"pending_classification_tasks",
+	).Where(
+		selectBuilder.Equal("project_id", projectID),
+	).Where(
+		parameters.Where...,
+	)
+
+	if parameters.PageSize != 0 {
+		selectBuilder.Offset(int(parameters.Page) * int(parameters.PageSize))
+		selectBuilder.Limit(int(parameters.PageSize))
+	}
+
+	sql, binds := selectBuilder.Build()
+
+	rows, err := d.db.QueryContext(ctx, sql, binds...)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error finding pending classification tasks for project: %w",
+			err,
+		)
+	}
+
+	defer rows.Close()
+
+	var pendingClassificationTasks []PendingClassificationTask
+
+	for rows.Next() {
+		var pendingClassificationTask PendingClassificationTask
+
+		if err := rows.Scan(
+			&pendingClassificationTask.ID,
+			&pendingClassificationTask.ProjectID,
+			&pendingClassificationTask.LLMInput,
+			&pendingClassificationTask.LLMOutput,
+			&pendingClassificationTask.Embedding,
+			&pendingClassificationTask.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf(
+				"storage: error scanning pending classification task: %w",
+				err,
+			)
+		}
+
+		pendingClassificationTasks = append(
+			pendingClassificationTasks,
+			pendingClassificationTask,
+		)
+	}
+
+	return pendingClassificationTasks, nil
+}
+
+// UpdatePendingClassificationTask updates the pending classification task with
+// the provided ID with the provided values.
+func (d Database) UpdatePendingClassificationTask(ctx context.Context, pct PendingClassificationTask) error {
+	_, err := d.db.ExecContext(ctx, `
+		UPDATE pending_classification_tasks
+		SET project_id = $1, llm_input = $2, llm_output = $3, embedding = $4
+		WHERE id = $5
+	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput, pct.Embedding, pct.ID)
+	if err != nil {
+		return fmt.Errorf(
+			"storage: error updating pending classification task: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
+// DeletePendingClassificationTask deletes a pending classification task from
+// the database based on the given ID.
+func (d Database) DeletePendingClassificationTask(ctx context.Context, id int64) error {
+	_, err := d.db.ExecContext(ctx, `
+		DELETE FROM pending_classification_tasks
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return fmt.Errorf(
+			"storage: error deleting pending classification task: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
 /// ClassificationTask methods.
 
 // CreateClassificationTask creates a new classification task in the database

@@ -28,7 +28,7 @@ type ClassificationTask struct {
 	CreatedAt time.Time `json:"created_at"`
 	Embedding []byte    `json:"embedding"`
 	Id        int64     `json:"id"`
-	LabelId   *int64    `json:"label_id,omitempty"`
+	LabelId   int64     `json:"label_id"`
 	LlmInput  string    `json:"llm_input"`
 	LlmOutput string    `json:"llm_output"`
 	ProjectId int64     `json:"project_id"`
@@ -74,6 +74,22 @@ type LabelTask struct {
 // Location defines model for Location.
 type Location = string
 
+// PendingClassificationTask defines model for PendingClassificationTask.
+type PendingClassificationTask struct {
+	CreatedAt time.Time `json:"created_at"`
+	Embedding []byte    `json:"embedding"`
+	Id        int64     `json:"id"`
+	LlmInput  string    `json:"llm_input"`
+	LlmOutput string    `json:"llm_output"`
+	ProjectId int64     `json:"project_id"`
+}
+
+// PendingClassificationTaskList defines model for PendingClassificationTaskList.
+type PendingClassificationTaskList struct {
+	Data  []PendingClassificationTask `json:"data"`
+	Total uint64                      `json:"total"`
+}
+
 // Project defines model for Project.
 type Project struct {
 	CreatedAt   time.Time                  `json:"created_at"`
@@ -96,8 +112,15 @@ type PageSize = uint64
 
 // GetProjectProjectIdClassificationTasksParams defines parameters for GetProjectProjectIdClassificationTasks.
 type GetProjectProjectIdClassificationTasksParams struct {
-	Labelled *bool `form:"labelled,omitempty" json:"labelled,omitempty"`
+	// Page The page number
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
+	// PageSize The number of results per page
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// GetProjectProjectIdPendingClassificationTasksParams defines parameters for GetProjectProjectIdPendingClassificationTasks.
+type GetProjectProjectIdPendingClassificationTasksParams struct {
 	// Page The page number
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -150,6 +173,9 @@ type ServerInterface interface {
 	// (GET /project/{project_id}/classification_tasks)
 	GetProjectProjectIdClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdClassificationTasksParams)
 
+	// (GET /project/{project_id}/pending_classification_tasks)
+	GetProjectProjectIdPendingClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdPendingClassificationTasksParams)
+
 	// (GET /projects)
 	GetProjects(w http.ResponseWriter, r *http.Request)
 }
@@ -200,6 +226,11 @@ func (_ Unimplemented) GetProjectProjectIdClassificationTaskLabelId(w http.Respo
 
 // (GET /project/{project_id}/classification_tasks)
 func (_ Unimplemented) GetProjectProjectIdClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdClassificationTasksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /project/{project_id}/pending_classification_tasks)
+func (_ Unimplemented) GetProjectProjectIdPendingClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdPendingClassificationTasksParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -448,14 +479,6 @@ func (siw *ServerInterfaceWrapper) GetProjectProjectIdClassificationTasks(w http
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetProjectProjectIdClassificationTasksParams
 
-	// ------------- Optional query parameter "labelled" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "labelled", r.URL.Query(), &params.Labelled)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "labelled", Err: err})
-		return
-	}
-
 	// ------------- Optional query parameter "page" -------------
 
 	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
@@ -474,6 +497,51 @@ func (siw *ServerInterfaceWrapper) GetProjectProjectIdClassificationTasks(w http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetProjectProjectIdClassificationTasks(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetProjectProjectIdPendingClassificationTasks operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectProjectIdPendingClassificationTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "project_id", runtime.ParamLocationPath, chi.URLParam(r, "project_id"), &projectId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProjectProjectIdPendingClassificationTasksParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page_size", r.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectProjectIdPendingClassificationTasks(w, r, projectId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -639,6 +707,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/project/{project_id}/classification_tasks", wrapper.GetProjectProjectIdClassificationTasks)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/project/{project_id}/pending_classification_tasks", wrapper.GetProjectProjectIdPendingClassificationTasks)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/projects", wrapper.GetProjects)
 	})
 
@@ -728,7 +799,7 @@ type PostProjectProjectIdClassificationTaskResponseObject interface {
 	VisitPostProjectProjectIdClassificationTaskResponse(w http.ResponseWriter) error
 }
 
-type PostProjectProjectIdClassificationTask201JSONResponse ClassificationTask
+type PostProjectProjectIdClassificationTask201JSONResponse PendingClassificationTask
 
 func (response PostProjectProjectIdClassificationTask201JSONResponse) VisitPostProjectProjectIdClassificationTaskResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -884,6 +955,32 @@ func (response GetProjectProjectIdClassificationTasks404Response) VisitGetProjec
 	return nil
 }
 
+type GetProjectProjectIdPendingClassificationTasksRequestObject struct {
+	ProjectId int64 `json:"project_id"`
+	Params    GetProjectProjectIdPendingClassificationTasksParams
+}
+
+type GetProjectProjectIdPendingClassificationTasksResponseObject interface {
+	VisitGetProjectProjectIdPendingClassificationTasksResponse(w http.ResponseWriter) error
+}
+
+type GetProjectProjectIdPendingClassificationTasks200JSONResponse PendingClassificationTaskList
+
+func (response GetProjectProjectIdPendingClassificationTasks200JSONResponse) VisitGetProjectProjectIdPendingClassificationTasksResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProjectProjectIdPendingClassificationTasks404Response struct {
+}
+
+func (response GetProjectProjectIdPendingClassificationTasks404Response) VisitGetProjectProjectIdPendingClassificationTasksResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
 type GetProjectsRequestObject struct {
 }
 
@@ -929,6 +1026,9 @@ type StrictServerInterface interface {
 
 	// (GET /project/{project_id}/classification_tasks)
 	GetProjectProjectIdClassificationTasks(ctx context.Context, request GetProjectProjectIdClassificationTasksRequestObject) (GetProjectProjectIdClassificationTasksResponseObject, error)
+
+	// (GET /project/{project_id}/pending_classification_tasks)
+	GetProjectProjectIdPendingClassificationTasks(ctx context.Context, request GetProjectProjectIdPendingClassificationTasksRequestObject) (GetProjectProjectIdPendingClassificationTasksResponseObject, error)
 
 	// (GET /projects)
 	GetProjects(ctx context.Context, request GetProjectsRequestObject) (GetProjectsResponseObject, error)
@@ -1251,6 +1351,33 @@ func (sh *strictHandler) GetProjectProjectIdClassificationTasks(w http.ResponseW
 	}
 }
 
+// GetProjectProjectIdPendingClassificationTasks operation middleware
+func (sh *strictHandler) GetProjectProjectIdPendingClassificationTasks(w http.ResponseWriter, r *http.Request, projectId int64, params GetProjectProjectIdPendingClassificationTasksParams) {
+	var request GetProjectProjectIdPendingClassificationTasksRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectProjectIdPendingClassificationTasks(ctx, request.(GetProjectProjectIdPendingClassificationTasksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectProjectIdPendingClassificationTasks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectProjectIdPendingClassificationTasksResponseObject); ok {
+		if err := validResponse.VisitGetProjectProjectIdPendingClassificationTasksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetProjects operation middleware
 func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	var request GetProjectsRequestObject
@@ -1278,28 +1405,29 @@ func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xZ3W7jNhN9FYLfB/RGtpxNUCx0t22BIkWADZrcLQKDlsY2NxLJJan8NNC7FyRlWbIo",
-	"m4qdBC16lVjkDGfOnDkeyi845YXgDJhWOHnBgkhSgAZpP12TFZi/GahUUqEpZzjBt2tAgqwAsbJYgMQR",
-	"pubxjxLkM44wIwXgBJsdOMIqXUNBjJMllwXROMGU6Z8vcIQLymhRFjiZRVg/C3BLsLIunyYrPqmfls6i",
-	"qiIb0Q39ayAqFxDiSyRBlblWSIBEdSRDQc6V8RcW6VlopFWEJSjBmQKL5J+QUQmp7sf9Bcl6jXKGNEd6",
-	"DWgpOdPAMofzI9Vr+ziVQDRkJjteytREvQaS1dW64ilxTl9ayfxfwhIn+H/xttCxW1VxY1FVNuT6uTH7",
-	"NSdK0SV1G26Jurf0kFyA1NQlVYczJ7qDWkY0TDQtTHg1LkpLyla4ijAUC8gy86FtsnjW3t00M9v2Ql4j",
-	"HuGcLCCfj7LIizllotQtk+3ZZpWXemhZSP4dUj3iQMuJHyWVkOHkm8mt46UdT+f0NmhRG/S7BjG+MF5M",
-	"WP26XRlcTlO80eV4N+TsYa8BhyrdxyYj2vYO1VCoQ03k6ZSqOZtISZ7tZ65JfjDf0p+wjWfjw5uYzTuk",
-	"Zwf6jzJiddHbBa/skZ0kAtg9JrUBWg/RbjcYu234vGvHLg812uLtQcR9sRw63u6KOs58sdgc/XXczXNM",
-	"/wwn3/4KachRSupjxiBEr1GWQ7COVh51RP86anmaOKy4VpE8FT4oTzWiqg+paK0EJbUpTi+JqneueUTZ",
-	"ktvEqM7N2g0UhGmaohtgCkz5H0AqN7CcTWfGLRfAiKA4wefT2fSTUWSi1zawuF6bfleunCvwDD6/g1Z2",
-	"qvkqgH25vkRKQNrUAdsTpP3/MnPbvzq3fyi73JmvPs1mlnp2bLKHESHy2le8iWM7FXUx6BKpjv58ette",
-	"mNBCcOnoTvQaJ3hF9bpcTFNexCvQ95TF95RNausNBufYjVb9YdWfttsdi1ZzceVBz8mUQgQxeESb7bug",
-	"XXOlr5s1Q1JQ+heePe8B62ny+Pg4MW07KWUOLOUZZOEzZVc/q25zaFlC1Svd2ajSBdHeD/lmfhbb7jif",
-	"nQ85baKMm+m9W534hWbVYX7Xu7dj/Io+AEOXv/k4XmdwaUec1mXs24u7wFjuNfcXKzVdeKM+y/d/N9wd",
-	"2UpH1GMYmSrCF7OLgbvnkBXKOCjEuEbwZOa63WptR8YqTjuqP9ebL9mAZuuaImu6p/GainrGs5Aadwbd",
-	"U9Q6RATGlXlw/DT4n1xbvOe8q8wMRTCsOD7OHK0+B/gcKE+e0EZJ1R5+B6rYKRke/SN1cgShgqq1Tz6D",
-	"PBwppZZ6cXNH8auqHbOP4WCYyF5mV/XbgX8VE99hlNteP4P09SPaoRTZCfX1g7tmfqBhDo4haPMe7DV9",
-	"8jFdcveu15LBu/5Hzw+tMEYNEXXF33qUcMw8YqCw9qcaKyxY/80Wb0S2EdUbK5gDfo6UTfUqSipElOIp",
-	"tZ1lQyKDr1GCWKk+jI87P2palHPIsMfhgvMcCHPGPtZsM4jtr7+B++xvsu9N45orgSy2BacrBhnSvFXs",
-	"kFcNhqDsJz8/A+iXU6URX6LGYphgCr/96xg1hFovzs3vwiAfNpwuZY4TvNZaJHGc85Tka6508nn2eRYT",
-	"QWNc3VV/BwAA//+0q2ZDViAAAA==",
+	"H4sIAAAAAAAC/+xa227jNhD9FYIt0BfZ8m6CYqG3bQsUKQLEaPIWBAYtjW1uJJJLUrnU0L8XJGXZiqiL",
+	"L3HQYp9ii+RwOOfM4YycNY55JjgDphWO1lgQSTLQIO23KVmC+ZuAiiUVmnKGI3y3AiTIEhDLszlIHGBq",
+	"Hn/PQb7iADOSAY6wmYEDrOIVZMQYWXCZEY0jTJn+9RIHOKOMZnmGo0mA9asANwRLa/JltOSj8mnuVhRF",
+	"YD26pf+0eOUcQnyBJKg81QoJkKj0pM3JmTL2hnn6aainRYAlKMGZAhvJvyGhEmLd9PsrkuUY5QxpjvQK",
+	"0EJypoElLs7PVK/s41gC0ZCY0/FcxsbrFZCkROuax8QZXe8c5mcJCxzhn8It0KEbVWG1oiisy+Vzs+z3",
+	"lChFF9RNuCPq0TwlaXqzwNF9t9kpsISypcdEEayxkFyA1NQFJiVzSGc0MZ87Q7vlgITvOZWQ4Oh+u/yh",
+	"QobPv5lAFw9F4DnFtVlgmV5zo4zsjOgaARKiYaRpZiJdmldaUrbERYCHOx04P3emb60IyY2/h4eAJrhm",
+	"ZbNZsHuoZni8waFKN2OTEG2ZRDVkqo9SXtA3exMpyav9zjVJe8+b+w9s/dnY8B7MntvP4PrRIJtDYrha",
+	"Q31OGbEq0QArTbMZZSLXXijNKM+1f/gtcStLtXXBjkv7HK2F1m2082VRx35Txy4PNXalzBMRJ7N929tZ",
+	"Qc2Yzxd7Rj+Ob8+5t4T4N9wR1IocuaQ+ZrRr3km0poWor/p4ZTqc0u8jXv2J0atsrWCcQOC6Lrcz61xr",
+	"Wh7CsL5U3vu2U0fcGU7OPAEdJiiWSB5V6SeOi6hqhlTsjAzjSQlO4xBFY1/ziLIFtwejOjVjt5ARpmmM",
+	"boEpMJLzBFK5kvHTeGLMcgGMCIojfDGejD+bRCJ6ZR0Ly7HxN+XgXIKn9PwTtLJ15Y0A9nV6hZSAuMIB",
+	"2x2k/XyVuOk3zuxfyg7XKtzPk4mlni1c7WZEiLS0FW782Nal9RjUiVR6fzG+2x0Y0Uxw6ehO9ApHeEn1",
+	"Kp+PY56FS9CPlIWPlI3K1ZsYXGBX3DbbBf+x3exQ7CQXV57ouatRIYIYPKPN9LdBm3Klp9WYISko/RtP",
+	"XjuC9TJ6fn4embQd5TIFFvMEkuFVff3OLurJoWUORQO6T3tBN4j2/pBvOhixzY6LyUWb0crLsOqf6uiE",
+	"a5oU/fwuZ28bqSV9Aoau/vBxvDzBlb2Zdtrh+7VrIS33qg7SSk09vEGT5d1X4sORqXQEHu2RKQJ8Obls",
+	"6f7bVqGEg0KMawQv5qp9i9b2pi/CuKb6M72plQYkW30psks7Eq9C1HNpD8G4Vp+cAushIrAfzK0tj4n/",
+	"ybXFu895Zaa9CusRHrfQS6GjxaiH3gPVyuPaXsrVQfeBonZKwgf/Sdncg1iD0OpS00EWjlRWS72wapP9",
+	"Imur7mM4OExzr5Lr8gXV/4qJZ6jstm9ABsntR6RDLhKrs6fR1w/OmllPwvRWJWjzKvaQPPmYLHk4a5fS",
+	"2vqft5zodKO9mGhH/L1LCcfMIwoKu/5UZYUN1o/a4p3Itgd6+wpmi50jZVMdREmFiFI8pjazrEuk9a3K",
+	"IFaqj+CjD/itE6H9RX3gPPs797mZWMI9kIgWM7pkkCDNd/Aa8vLAcIz9MoRiZc82O4xqHR3fkZRrbUJ/",
+	"MO/g/r2LgH1IvgMRB/ArpUojvkDVinbmKPz+b/pUW/Qafm7+6QPk04aluUxxhFdaiygMUx6TdMWVjr5M",
+	"vkxCImiIi4fi3wAAAP//NeCyTDMkAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

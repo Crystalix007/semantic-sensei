@@ -129,11 +129,11 @@ paths:
               $ref: "#/components/schemas/CreateClassificationTask"
       responses:
         201:
-          description: "The created classification task"
+          description: "The created pending classification task"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClassificationTask"
+                $ref: "#/components/schemas/PendingClassificationTask"
         303:
           $ref: "#/components/responses/Redirect"
 
@@ -147,11 +147,6 @@ paths:
           schema:
             type: integer
             x-go-type: int64
-        - name: labelled
-          in: query
-          required: false
-          schema:
-            type: boolean
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
       responses:
@@ -223,6 +218,28 @@ paths:
           $ref: "#/components/responses/Redirect"
         404:
           description: "The classification task with the given ID does not exist"
+
+  /project/{project_id}/pending_classification_tasks:
+    get:
+      description: "Gets the pending classification tasks associated with a project"
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: int64
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        200:
+          description: "The pending classification tasks assigned to a project"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingClassificationTaskList"
+        404:
+          description: "The project doesn't exist"
 
   /openapi.json:
     get:
@@ -327,34 +344,15 @@ components:
         - embedding
 
     ClassificationTask:
-      type: object
-      properties:
-        id:
-          type: integer
-          x-go-type: int64
-        project_id:
-          type: integer
-          x-go-type: int64
-        llm_input:
-          type: string
-        llm_output:
-          type: string
-        embedding:
-          type: string
-          format: byte
-        created_at:
-          type: string
-          format: date-time
-        label_id:
-          type: integer
-          x-go-type: int64
-      required:
-        - id
-        - project_id
-        - llm_input
-        - llm_output
-        - embedding
-        - created_at
+      allOf:
+        - $ref: "#/components/schemas/PendingClassificationTask"
+        - type: object
+          properties:
+            label_id:
+              type: integer
+              x-go-type: int64
+          required:
+            - label_id
 
     ClassificationTaskList:
       type: object
@@ -382,6 +380,47 @@ components:
     Location:
       type: string
       format: uri
+
+    PendingClassificationTask:
+      type: object
+      properties:
+        id:
+          type: integer
+          x-go-type: int64
+        project_id:
+          type: integer
+          x-go-type: int64
+        llm_input:
+          type: string
+        llm_output:
+          type: string
+        embedding:
+          type: string
+          format: byte
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - project_id
+        - llm_input
+        - llm_output
+        - embedding
+        - created_at
+
+    PendingClassificationTaskList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingClassificationTask"
+        total:
+          type: integer
+          x-go-type: uint64
+      required:
+        - data
+        - total
 
   responses:
     Redirect:
