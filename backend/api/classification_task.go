@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 
+	"github.com/Crystalix007/semantic-sensei/backend/api/headers"
 	"github.com/Crystalix007/semantic-sensei/backend/api/redirect"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
@@ -195,6 +197,20 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 	}
 
 	if redirect.Should(ctx) {
+		headers := headers.Get(ctx)
+		referer, err := url.Parse(headers.Get("Referer"))
+
+		if err != nil {
+			return nil, fmt.Errorf(
+				"api: error parsing referer header: %w",
+				err,
+			)
+		}
+
+		if referer.Path == fmt.Sprintf("/project/%d/label_batch", request.ProjectId) {
+			return redirect.To(fmt.Sprintf("/project/%d/label_batch", request.ProjectId))
+		}
+
 		return redirect.To(fmt.Sprintf("/project/%d/task/%d", request.ProjectId, request.Id))
 	}
 

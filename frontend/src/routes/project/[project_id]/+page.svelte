@@ -100,6 +100,11 @@
 							{/each}
 						</tbody>
 					</table>
+					<a
+						href="/project/{data.project.id}/label_batch"
+						class="block bg-teal-600 my-4 py-0.5 px-2 rounded-md border-blue-300 border text-white text-center"
+						>Label Batch</a
+					>
 				{/if}
 				{#if data.completed_tasks.data.length !== 0}
 					<hr class="my-2 h-px border-0 bg-zinc-300" />
