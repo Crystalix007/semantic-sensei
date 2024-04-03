@@ -57,6 +57,9 @@ func New(ctx context.Context, opts ...Option) (*API, error) {
 		chi.Use(middleware.Logger)
 	}
 
+	chi.Use(middleware.Recoverer)
+	chi.Use(middleware.Compress(5))
+
 	// TODO: the DB needs to be more persistent here, but for now, we'll just
 	// force the schema to be reloaded on every startup.
 	if err := a.db.Migrate(ctx); err != nil {
