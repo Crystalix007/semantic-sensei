@@ -299,8 +299,17 @@ func (a *API) GetProjectProjectIdPendingClassificationTasks(
 		}
 	}
 
+	pendingTaskCount, err := a.db.FindPendingClassificationTaskCountForProject(ctx, request.ProjectId)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"api: error getting pending task count for project %d: %w",
+			request.ProjectId,
+			err,
+		)
+	}
+
 	return openapi.GetProjectProjectIdPendingClassificationTasks200JSONResponse{
 		Data:  projectTasks,
-		Total: 0,
+		Total: pendingTaskCount,
 	}, nil
 }

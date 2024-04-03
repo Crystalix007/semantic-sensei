@@ -247,6 +247,40 @@ func (d Database) FindPendingClassificationTasksForProject(
 	return pendingClassificationTasks, nil
 }
 
+// FindPendingClassificationTaskCountForProject returns the count of pending
+// classification tasks for the specified project ID.
+func (d Database) FindPendingClassificationTaskCountForProject(
+	ctx context.Context,
+	projectID int64,
+	where ...string,
+) (uint64, error) {
+	selectBuilder := sqlbuilder.NewSelectBuilder()
+
+	selectBuilder.Select(
+		"count(*)",
+	).From(
+		"pending_classification_tasks",
+	).Where(
+		selectBuilder.Equal("project_id", projectID),
+	).Where(
+		where...,
+	)
+
+	var count uint64
+
+	sql, binds := selectBuilder.Build()
+
+	err := d.db.QueryRowContext(ctx, sql, binds...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"storage: error getting pending classification task count for project: %w",
+			err,
+		)
+	}
+
+	return count, nil
+}
+
 // UpdatePendingClassificationTask updates the pending classification task with
 // the provided ID with the provided values.
 func (d Database) UpdatePendingClassificationTask(ctx context.Context, pct PendingClassificationTask) error {
