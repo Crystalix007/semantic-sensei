@@ -181,7 +181,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClassificationTask"
+                $ref: "#/components/schemas/ClassificationTaskOrPendingClassificationTask"
         404:
           description: "The classification task with the given ID does not exist"
 
@@ -353,6 +353,11 @@ components:
               x-go-type: int64
           required:
             - label_id
+
+    ClassificationTaskOrPendingClassificationTask:
+      oneOf:
+        - $ref: "#/components/schemas/PendingClassificationTask"
+        - $ref: "#/components/schemas/ClassificationTask"
 
     ClassificationTaskList:
       type: object

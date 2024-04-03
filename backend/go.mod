@@ -3,7 +3,7 @@ module github.com/Crystalix007/semantic-sensei/backend
 go 1.21.1
 
 require (
-	github.com/getkin/kin-openapi v0.119.0
+	github.com/getkin/kin-openapi v0.122.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/huandu/go-sqlbuilder v1.25.0
 	github.com/oapi-codegen/runtime v1.1.0
@@ -42,7 +42,7 @@ require (
 )
 
 require (
-	github.com/deepmap/oapi-codegen/v2 v2.0.0
+	github.com/deepmap/oapi-codegen/v2 v2.1.0
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

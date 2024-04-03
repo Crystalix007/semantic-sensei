@@ -27,14 +27,23 @@ func (a API) GetProjectProjectIdClassificationTaskId(
 	}
 
 	if err == nil {
-		return openapi.GetProjectProjectIdClassificationTaskId200JSONResponse{
+		var b openapi.ClassificationTaskOrPendingClassificationTask
+
+		if err := b.FromPendingClassificationTask(openapi.PendingClassificationTask{
 			CreatedAt: pendingTask.CreatedAt,
 			Embedding: pendingTask.Embedding,
 			Id:        pendingTask.ID,
 			LlmInput:  pendingTask.LLMInput,
 			LlmOutput: pendingTask.LLMOutput,
 			ProjectId: pendingTask.ProjectID,
-		}, nil
+		}); err != nil {
+			return nil, fmt.Errorf(
+				"api: error encoding pending classification task in response: %w",
+				err,
+			)
+		}
+
+		return openapi.GetProjectProjectIdClassificationTaskId200JSONResponse(b), nil
 	}
 
 	task, err := a.db.GetClassificationTask(ctx, params.Id)
@@ -50,7 +59,9 @@ func (a API) GetProjectProjectIdClassificationTaskId(
 		)
 	}
 
-	return openapi.GetProjectProjectIdClassificationTaskId200JSONResponse{
+	var b openapi.ClassificationTaskOrPendingClassificationTask
+
+	if err := b.FromClassificationTask(openapi.ClassificationTask{
 		CreatedAt: task.CreatedAt,
 		Embedding: task.Embedding,
 		Id:        task.ID,
@@ -58,7 +69,14 @@ func (a API) GetProjectProjectIdClassificationTaskId(
 		LlmInput:  task.LLMInput,
 		LlmOutput: task.LLMOutput,
 		ProjectId: task.ProjectID,
-	}, nil
+	}); err != nil {
+		return nil, fmt.Errorf(
+			"api: error encoding classification task in response: %w",
+			err,
+		)
+	}
+
+	return openapi.GetProjectProjectIdClassificationTaskId200JSONResponse(b), nil
 }
 
 // PostProjectProjectIdClassificationTask creates a new classification task
