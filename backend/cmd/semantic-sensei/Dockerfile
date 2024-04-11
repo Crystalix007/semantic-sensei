@@ -22,3 +22,4 @@ WORKDIR /app
 COPY --from=builder /app/semantic-sensei ./semantic-sensei
 
 ENTRYPOINT ["/app/semantic-sensei", "serve", "--address=:8080"]
+EXPOSE 8080/tcp
