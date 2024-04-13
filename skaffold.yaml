@@ -1,0 +1,26 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+  name: semantic-sensei
+build:
+  local:
+    push: false
+    concurrency: 0
+    useBuildkit: true
+  artifacts:
+    - image: docker.io/crystalix007/semantic-sensei-backend
+      context: backend
+      docker:
+        dockerfile: cmd/semantic-sensei/Dockerfile
+    - image: docker.io/crystalix007/semantic-sensei-frontend
+      context: frontend
+      docker:
+        dockerfile: Dockerfile
+
+manifests:
+  kustomize:
+    paths:
+      - k8s/dev
+
+deploy:
+  kubectl: {}

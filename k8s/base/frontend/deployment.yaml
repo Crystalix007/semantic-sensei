@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/instance: frontend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/instance: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: docker.io/crystalix007/semantic-sensei-frontend:dummy
+          ports:
+            - name: http
+              containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http

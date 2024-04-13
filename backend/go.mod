@@ -2,7 +2,7 @@ module github.com/Crystalix007/semantic-sensei/backend
 
 replace github.com/deepmap/oapi-codegen/v2 v2.1.0 => github.com/Crystalix007/oapi-codegen/v2 v2.1.0-fixed-json-serialisation
 
-go 1.21.1
+go 1.22.2
 
 require (
 	github.com/getkin/kin-openapi v0.123.0

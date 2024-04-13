@@ -1,0 +1,13 @@
+---
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+labels:
+  - pairs:
+      app.kubernetes.io/app: semantic-sensei
+    includeSelectors: true
+
+resources:
+  - ../base/backend
+  - ../base/frontend
+  - ingress.yaml

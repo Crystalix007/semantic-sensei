@@ -46,6 +46,9 @@ func serve(cmd *cobra.Command, _ []string) error {
 	mux := chi.NewRouter()
 
 	mux.Handle("/api/*", api)
+	mux.Handle("/livez", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
 
 	if dev, err := cmd.Flags().GetString("dev"); err == nil && dev != "" {
 		slog.SetDefault(getDevLogger())
