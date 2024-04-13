@@ -1,5 +1,7 @@
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22 as builder
 
+ARG TARGETOS TARGETARCH TARGETVARIANT
+
 WORKDIR /app
 WORKDIR /src
 RUN \

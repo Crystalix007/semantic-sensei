@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20-alpine AS build
+FROM --platform=$BUILDPLATFORM docker.io/library/node:20-alpine AS build
 
 WORKDIR /app
 
