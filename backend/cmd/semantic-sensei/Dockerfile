@@ -17,7 +17,7 @@ RUN \
 	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT##*v} \
 	go build -o /app/semantic-sensei ./cmd/semantic-sensei
 
-FROM --platform=$TARGETPLATFORM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian12:nonroot
 
 WORKDIR /app
 COPY --from=builder /app/semantic-sensei ./semantic-sensei
