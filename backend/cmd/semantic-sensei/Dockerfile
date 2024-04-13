@@ -9,10 +9,11 @@ RUN \
 	--mount=type=bind,source=go.sum,target=go.sum \
 	go mod download -x
 
+COPY . .
+
 RUN \
 	--mount=type=cache,target=/go/pkg/mod \
 	--mount=type=cache,target=/root/.cache/go-build \
-	--mount=type=bind,source=.,target=. \
 	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT##*v} \
 	go build -o /app/semantic-sensei ./cmd/semantic-sensei
 
