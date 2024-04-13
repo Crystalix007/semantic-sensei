@@ -23,7 +23,7 @@ func (a *API) GetProjects(
 		return nil, fmt.Errorf("failed to get projects: %w", err)
 	}
 
-	var apiProjects []openapi.Project
+	apiProjects := make([]openapi.Project, 0, len(projects))
 
 	for _, project := range projects {
 		apiProjects = append(apiProjects, openapi.Project{
