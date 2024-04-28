@@ -16,7 +16,7 @@ export async function load({
 	fetch,
 }: PageLoadEvent): Promise<PageProps> {
 	const taskResponse = await fetch(
-		`/api/project/${params.project_id}/pending_classification_tasks`,
+		`/api/project/${params.project_id}/pending_classification_tasks?page_size=1`,
 	);
 	const tasks: PaginatedData<ClassificationTask> = await taskResponse.json();
 
