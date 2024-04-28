@@ -8,3 +8,4 @@ commonLabels:
 resources:
   - frontend
   - backend
+  - postgres

@@ -3,10 +3,9 @@ FROM --platform=$BUILDPLATFORM docker.io/library/node:20-alpine AS build
 WORKDIR /app
 
 RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml ./
 RUN \
 	--mount=type=cache,target=/app/node_modules \
-	--mount=type=bind,source=package.json,target=package.json \
-	--mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
 	pnpm install
 
 COPY . .

@@ -1,11 +1,21 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
-	_ "github.com/glebarez/go-sqlite"
+	"github.com/huandu/go-sqlbuilder"
+	_ "github.com/lib/pq"
+
+	"github.com/Crystalix007/semantic-sensei/backend/config"
 )
+
+// Register the default flavor for the SQL builder, so that the generated
+// queries are valid.
+func init() {
+	sqlbuilder.DefaultFlavor = sqlbuilder.PostgreSQL
+}
 
 // Database represents a connection to an SQL database.
 type Database struct {
@@ -18,11 +28,18 @@ type Database struct {
 // If the connection is successful, it returns a pointer to the Database struct
 // and nil error.
 // Otherwise, it returns nil and the error encountered during the connection.
-func Open() (*Database, error) {
-	db, err := sql.Open("sqlite", "./semantic-sensei.sqlite?_pragma=foreign_keys(1)")
+func Open(ctx context.Context, cfg config.Config) (*Database, error) {
+	db, err := sql.Open("postgres", cfg.Database.ConnectionString())
 	if err != nil {
 		return nil, fmt.Errorf(
 			"storage: error opening database connection: %w",
+			err,
+		)
+	}
+
+	if err := db.PingContext(ctx); err != nil {
+		return nil, fmt.Errorf(
+			"storage: error pinging database connection: %w",
 			err,
 		)
 	}

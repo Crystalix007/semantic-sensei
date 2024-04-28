@@ -7,7 +7,7 @@ import (
 
 	"github.com/Crystalix007/semantic-sensei/backend/schema/migrations"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
@@ -16,7 +16,7 @@ import (
 // It returns an error if there was a problem creating the migration driver or
 // source, or if there was an error running the migrations.
 func (d Database) Migrate(ctx context.Context) error {
-	driver, err := sqlite3.WithInstance(d.db, &sqlite3.Config{})
+	driver, err := postgres.WithInstance(d.db, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf(
 			"storage: error creating migration driver: %w",
@@ -32,7 +32,7 @@ func (d Database) Migrate(ctx context.Context) error {
 		)
 	}
 
-	migrator, err := migrate.NewWithInstance("migrations", source, "sqlite3", driver)
+	migrator, err := migrate.NewWithInstance("migrations", source, "postgres", driver)
 	if err != nil {
 		return fmt.Errorf(
 			"storage: error creating migrator: %w",

@@ -1,0 +1,7 @@
+---
+database:
+  db: semantic-sensei
+  host: postgres
+  password: changeme
+  user: admin
+  ssl: disable

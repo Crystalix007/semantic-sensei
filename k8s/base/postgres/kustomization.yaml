@@ -3,10 +3,10 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
 secretGenerator:
-  - name: backend-config
-    files:
-      - config.yaml
+  - name: postgres-env
+    envs:
+      - env.env
 
 resources:
-  - deployment.yaml
   - service.yaml
+  - statefulset.yaml

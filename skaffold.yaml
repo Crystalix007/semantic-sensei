@@ -7,11 +7,18 @@ build:
     push: false
     concurrency: 0
     useBuildkit: true
+
   artifacts:
+    - image: docker.io/crystalix007/semantic-sensei-wait-for-services
+      context: backend
+      docker:
+        dockerfile: cmd/wait-for-services/Dockerfile
+
     - image: docker.io/crystalix007/semantic-sensei-backend
       context: backend
       docker:
         dockerfile: cmd/semantic-sensei/Dockerfile
+
     - image: docker.io/crystalix007/semantic-sensei-frontend
       context: frontend
       docker:

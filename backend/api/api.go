@@ -7,6 +7,7 @@ import (
 
 	"github.com/Crystalix007/semantic-sensei/backend/api/headers"
 	"github.com/Crystalix007/semantic-sensei/backend/api/url"
+	"github.com/Crystalix007/semantic-sensei/backend/config"
 	"github.com/Crystalix007/semantic-sensei/backend/openapi"
 	"github.com/Crystalix007/semantic-sensei/backend/storage"
 	"github.com/go-chi/chi/v5"
@@ -16,6 +17,7 @@ import (
 // API represents an API with a handler.
 type API struct {
 	handler http.Handler
+	config  *config.Config
 	db      *storage.Database
 
 	loggingEnabled bool
@@ -49,7 +51,7 @@ func New(ctx context.Context, opts ...Option) (*API, error) {
 		opt(a)
 	}
 
-	if err := a.setDefaults(); err != nil {
+	if err := a.setDefaults(ctx); err != nil {
 		return nil, err
 	}
 
