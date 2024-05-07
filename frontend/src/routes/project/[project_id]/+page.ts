@@ -13,12 +13,12 @@ export async function load({ params, fetch }): Promise<PageData> {
 	const project = await projectResponse.json();
 
 	const pendingTasksResponse = await fetch(
-		`/api/project/${params.project_id}/pending_classification_tasks`,
+		`/api/project/${params.project_id}/pending_classification_tasks?page_size=10`,
 	);
 	const pendingTasks = await pendingTasksResponse.json();
 
 	const completedTasksResponse = await fetch(
-		`/api/project/${params.project_id}/classification_tasks`,
+		`/api/project/${params.project_id}/classification_tasks?page_size=10`,
 	);
 	const completedTasks = await completedTasksResponse.json();
 
