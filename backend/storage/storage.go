@@ -203,8 +203,9 @@ func (d Database) FindPendingClassificationTasksForProject(
 	)
 
 	if parameters.PageSize != 0 {
-		selectBuilder.Offset(int(parameters.Page) * int(parameters.PageSize))
-		selectBuilder.Limit(int(parameters.PageSize))
+		selectBuilder.
+			Offset(int(parameters.Page) * int(parameters.PageSize)).
+			Limit(int(parameters.PageSize))
 	}
 
 	sql, binds := selectBuilder.Build()
@@ -399,8 +400,9 @@ func (d Database) FindClassificationTasksForProject(
 	)
 
 	if parameters.PageSize != 0 {
-		selectBuilder.Offset(int(parameters.Page) * int(parameters.PageSize))
-		selectBuilder.Limit(int(parameters.PageSize))
+		selectBuilder.
+			Offset(int(parameters.Page) * int(parameters.PageSize)).
+			Limit(int(parameters.PageSize))
 	}
 
 	sql, binds := selectBuilder.Build()
