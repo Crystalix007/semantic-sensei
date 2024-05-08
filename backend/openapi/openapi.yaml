@@ -136,6 +136,8 @@ paths:
                 $ref: "#/components/schemas/PendingClassificationTask"
         303:
           $ref: "#/components/responses/Redirect"
+        409:
+          $ref: "#/components/responses/Conflict"
 
   /project/{project_id}/classification_tasks:
     get:
@@ -428,6 +430,13 @@ components:
         - total
 
   responses:
+    Conflict:
+      description: "The resource already exists"
+      headers:
+        Location:
+          schema:
+            $ref: "#/components/schemas/Location"
+
     Redirect:
       description: "A redirection to the frontend page with the created resource"
       headers:

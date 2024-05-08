@@ -2,10 +2,21 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/lib/pq"
 )
+
+// ErrExistingResource is an error that is returned when a resource already
+// exists in the storage.
+var ErrExistingResource = errors.New("storage: resource already exists")
+
+// DuplicateKeyViolatesUniqueConstraintCode is the error code returned by
+// PostgreSQL when a unique constraint is violated.
+const DuplicateKeyViolatesUniqueConstraintCode = "23505"
 
 /// Project methods.
 
@@ -141,6 +152,31 @@ func (d Database) CreatePendingClassificationTask(ctx context.Context, pct Pendi
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput, pct.Embedding).Scan(&id)
+
+	var pqErr *pq.Error
+
+	if errors.As(err, &pqErr) &&
+		pqErr.Code == DuplicateKeyViolatesUniqueConstraintCode {
+		slog.InfoContext(ctx, "duplicate pending classification task found")
+
+		var existingID int64
+
+		if err := d.db.QueryRowContext(ctx, `
+			SELECT id
+			FROM pending_classification_tasks
+			WHERE project_id = $1
+			AND llm_input_sha256 = sha256($2 :: bytea)
+			AND llm_output_sha256 = sha256($3 :: bytea)
+	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput).Scan(&existingID); err != nil {
+			return 0, fmt.Errorf(
+				"storage: error finding existing pending classification task while attempting to create new pending task: %w",
+				err,
+			)
+		}
+
+		return existingID, fmt.Errorf("%w: %w", ErrExistingResource, pqErr)
+	}
+
 	if err != nil {
 		return 0, fmt.Errorf(
 			"storage: error creating pending classification task: %w",
@@ -337,6 +373,32 @@ func (d Database) CreateClassificationTask(ctx context.Context, ct Classificatio
 	`, ct.ProjectID, ct.LLMInput, ct.LLMOutput, ct.Embedding, ct.LabelID).Scan(
 		&id,
 	)
+
+	var pqErr *pq.Error
+
+	if errors.As(err, &pqErr) &&
+		pqErr.Code == DuplicateKeyViolatesUniqueConstraintCode {
+		slog.InfoContext(ctx, "duplicate classification task found")
+
+		var existingID int64
+
+		if err := d.db.QueryRowContext(ctx, `
+			SELECT id
+			FROM classification_tasks
+			WHERE project_id = $1
+			AND llm_input_sha256 = sha256($2 :: bytea)
+			AND llm_output_sha256 = sha256($3 :: bytea)
+	`, ct.ProjectID, ct.LLMInput, ct.LLMOutput).Scan(&existingID); err != nil {
+			return 0, fmt.Errorf(
+				"storage: error finding existing classification task while attempting to create new task: %w",
+				err,
+			)
+		}
+
+		return existingID, fmt.Errorf("%w: %w", ErrExistingResource, pqErr)
+		return 0, fmt.Errorf("%w: %w", ErrExistingResource, pqErr)
+	}
+
 	if err != nil {
 		return 0, fmt.Errorf(
 			"storage: error creating classification task: %w",

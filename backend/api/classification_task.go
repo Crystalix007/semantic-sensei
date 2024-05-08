@@ -124,6 +124,15 @@ func (a API) PostProjectProjectIdClassificationTask(
 	}
 
 	taskID, err := a.db.CreatePendingClassificationTask(ctx, pendingClassificationTask)
+
+	if errors.Is(err, storage.ErrExistingResource) {
+		return openapi.PostProjectProjectIdClassificationTask409Response{
+			Headers: openapi.ConflictResponseHeaders{
+				Location: fmt.Sprintf("/project/%d/task/%d", params.ProjectId, taskID),
+			},
+		}, nil
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error creating classification task: %w",
@@ -179,8 +188,6 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 		Embedding: pendingTask.Embedding,
 		LabelID:   request.Body.Label,
 	}
-
-	_, err = a.db.CreateClassificationTask(ctx, classificationTask)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"api: error updating classification task: %w",
