@@ -2,11 +2,6 @@
 kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
-secretGenerator:
-  - name: backend-config
-    files:
-      - config.yaml
-
 resources:
   - deployment.yaml
   - service.yaml

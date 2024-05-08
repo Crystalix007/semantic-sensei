@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-services
+          volumeMounts:
+            - name: backend-config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+      containers:
+        - name: backend
+          volumeMounts:
+            - name: backend-config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+      volumes:
+        - name: backend-config
+          secret:
+            secretName: backend-config

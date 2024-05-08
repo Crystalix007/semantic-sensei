@@ -20,27 +20,13 @@ spec:
           image: docker.io/crystalix007/semantic-sensei-wait-for-services:dummy
           args:
             - --database
-          volumeMounts:
-            - name: backend-config
-              mountPath: /app/config.yaml
-              subPath: config.yaml
-              readOnly: true
       containers:
         - name: backend
           image: docker.io/crystalix007/semantic-sensei-backend:dummy
           ports:
             - name: http
               containerPort: 8080
-          volumeMounts:
-            - name: backend-config
-              mountPath: /app/config.yaml
-              subPath: config.yaml
-              readOnly: true
           livenessProbe:
             httpGet:
               path: /livez
               port: http
-      volumes:
-        - name: backend-config
-          secret:
-            secretName: backend-config

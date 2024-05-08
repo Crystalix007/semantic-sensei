@@ -9,8 +9,8 @@ labels:
     includeSelectors: true
 
 resources:
-  - ../base/backend
+  - backend
   - ../base/frontend
-  - ../base/postgres
+  - postgres
   - ingress.yaml
   - namespace.yaml

@@ -20,21 +20,6 @@ spec:
       containers:
         - name: postgres
           image: docker.io/pgvector/pgvector:pg16
-          envFrom:
-            - secretRef:
-                name: postgres-env
           ports:
             - containerPort: 5432
               name: psql
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
