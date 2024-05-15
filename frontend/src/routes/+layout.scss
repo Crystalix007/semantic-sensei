@@ -9,8 +9,22 @@
 	}
 }
 
+@mixin button {
+	@apply px-4 py-2 rounded-md;
+}
+
+.button {
+	@include button;
+}
+
 .create-button {
-	@apply bg-blue-500 text-white px-4 py-2 rounded-md;
+	@include button;
+	@apply bg-blue-500 text-white;
+}
+
+.preset-button {
+	@include button;
+	@apply bg-green-500 text-white;
 }
 
 @mixin page {

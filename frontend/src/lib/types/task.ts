@@ -7,5 +7,5 @@ export interface ClassificationTask {
 	llm_output: string;
 	embedding: Embeddings;
 	created_at: string;
-	label_id?: string;
+	label_id?: number;
 }

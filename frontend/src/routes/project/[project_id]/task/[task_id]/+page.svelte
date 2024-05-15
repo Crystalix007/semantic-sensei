@@ -41,8 +41,11 @@
 						method="post"
 					>
 						{#each data.labels as label}
-							<button class="create-button" name="label" value={label.id}
-								>{label.label}</button
+							<button
+								class:create-button={label.id !== data.task.label_id}
+								class:preset-button={label.id === data.task.label_id}
+								name="label"
+								value={label.id}>{label.label}</button
 							>
 						{/each}
 					</form>
