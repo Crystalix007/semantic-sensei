@@ -20,18 +20,17 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ClassificationTask defines model for ClassificationTask.
 type ClassificationTask struct {
-	CreatedAt time.Time `json:"created_at"`
-	Embedding []byte    `json:"embedding"`
-	Id        int64     `json:"id"`
-	LabelId   int64     `json:"label_id"`
-	LlmInput  string    `json:"llm_input"`
-	LlmOutput string    `json:"llm_output"`
-	ProjectId int64     `json:"project_id"`
+	CreatedAt  time.Time            `json:"created_at"`
+	Embeddings map[string]Embedding `json:"embeddings"`
+	Id         int64                `json:"id"`
+	LabelId    int64                `json:"label_id"`
+	LlmInput   string               `json:"llm_input"`
+	LlmOutput  string               `json:"llm_output"`
+	ProjectId  int64                `json:"project_id"`
 }
 
 // ClassificationTaskLabel defines model for ClassificationTaskLabel.
@@ -55,9 +54,9 @@ type ClassificationTaskOrPendingClassificationTask struct {
 
 // CreateClassificationTask defines model for CreateClassificationTask.
 type CreateClassificationTask struct {
-	Embedding openapi_types.File `json:"embedding"`
-	LlmInput  string             `json:"llm_input"`
-	LlmOutput string             `json:"llm_output"`
+	Embeddings map[string]Embedding `json:"embeddings"`
+	LlmInput   string               `json:"llm_input"`
+	LlmOutput  string               `json:"llm_output"`
 }
 
 // CreateClassificationTaskLabel defines model for CreateClassificationTaskLabel.
@@ -71,6 +70,9 @@ type CreateProject struct {
 	Name        string `json:"name"`
 }
 
+// Embedding defines model for Embedding.
+type Embedding = []byte
+
 // LabelTask defines model for LabelTask.
 type LabelTask struct {
 	Label int64 `json:"label"`
@@ -81,12 +83,12 @@ type Location = string
 
 // PendingClassificationTask defines model for PendingClassificationTask.
 type PendingClassificationTask struct {
-	CreatedAt time.Time `json:"created_at"`
-	Embedding []byte    `json:"embedding"`
-	Id        int64     `json:"id"`
-	LlmInput  string    `json:"llm_input"`
-	LlmOutput string    `json:"llm_output"`
-	ProjectId int64     `json:"project_id"`
+	CreatedAt  time.Time            `json:"created_at"`
+	Embeddings map[string]Embedding `json:"embeddings"`
+	Id         int64                `json:"id"`
+	LlmInput   string               `json:"llm_input"`
+	LlmOutput  string               `json:"llm_output"`
+	ProjectId  int64                `json:"project_id"`
 }
 
 // PendingClassificationTaskList defines model for PendingClassificationTaskList.
@@ -1487,30 +1489,30 @@ func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xaQY/bNhP9KwS/D+hFXjnZoEh1S1ug2CLALprcgoVBS2ObiUQyJJWNa+i/FyIl2YpJ",
-	"iba8DlrklKxIDofz3jzOEN7hlBeCM2Ba4WSHBZGkAA3S/PVA1lD/m4FKJRWacoYT/H4DSJA1IFYWS5A4",
-	"wrT+/LkEucURZqQAnOB6Bo6wSjdQkNrIisuCaJxgyvTPr3CEC8poURY4mUdYbwXYIVgbk19naz5rvpZ2",
-	"RVVFxqN39G+PV9YhxFdIgipzrZAAiRpPfE4uVG0vzNMXoZ5WEZagBGcKTCR/42yV01S7/ZageClTQCSX",
-	"QLItgq9UaYUjvAGSNWC85Smxa3YHvv5fwgon+H/xHsfYjqq4W1EZh/6CjEpw+fAGyWaMcoY0R3oDaCU5",
-	"08Ayi/UT1RvzOZVANGSdzxd1smphsEHLiVJ0Re2E90R9qr+SPL9f4eTDsNkHYBlla4eJKtphIbkAqakF",
-	"JydLyBc0q/8/CO+ehxI+l1RChpMP++WPHTv48mMd6OqxihyneFsvMNnWc6OJ7ILoHgkzomGmaVFHujGv",
-	"tKRsjasIhzsdWT8Ppu+tCMlrf88PAc1wz0q7WXR4qOPwOINDlT6OTUa0YRLVUKgxSjlBb/cmUpKt+Ztr",
-	"ko+et3Qf2PjT2gg72L30czLZYc5gMq1PDYqhpwHI7VMfAyiWkNW79+i5pIwYST1iVZ4XC8pEqZ2cq0d5",
-	"qd3D32ZYZ6m3LjpwyYmB52ie/PPlhyvdB/Z7sGng4PCh5joiYu+kse3NrKhnzOWLOaMbx2/PebLWuTc8",
-	"UP6OHKWkLmYMJsJ0UfQQdaunS+j5lH4elR1PjFEJ9oJxASUekqsrC7I3Lc9h2Fgqn3wtqwmXm5UzR0DD",
-	"BMUQyaEq48SxEVXHIRUHI2E8acA5OkR1tG/9ibIVNwejOq/H3kFBmKYpegdMQS05X0AqW9u+uJnXZrkA",
-	"RgTFCb69md+8rBOJ6I1xLG7Gbj4qC+caHDXyH6CVKYDvBbA3D3dICUg7HLDZQZr/32V2+r01+6cyw712",
-	"4OV8bqhnKmyzGREib2zFrR/7Arofgz6RGu9vb94fDsxoIbi0dCd6gxO8pnpTLm9SXsRr0J8oiz9RNmtW",
-	"tzG4bXqF4x7FfWw7OxYHycWVI3r2alSIIAZPqJ3+bdAeuNIP3VhNUlD6V55tB4L1dfb09DSr03ZWyhxY",
-	"yjPIwtuP/p1d9ZNDyxKqI+henARdEO3dIW9bLbHPjtv5rc9o52XcNXp9dOIdzapxfjez9x3fmn4Bhu5+",
-	"d3G8OcGduZkO3g4+7Gy/bbjXtdtGavrhjY5ZPnwlPk5MpQl4+CNTRfjV/JXnqcS3CmUcFGJc23b/CK39",
-	"TV/FaU/1F7qtlQKSrb8UmaUDidch6ri0QzDu1SeXwDpEBE6D2dvy1PG/uLY497muzPirsBHhsQudFDpd",
-	"jOoc+WV8QfdUdmI+BMqb4ywnSd1AfgSq4CUzJPpX6uxpjyM+kgYBOaTMQRYmqrRhZdy13G7BNhX8FHqG",
-	"6fdd9rZ5lftPkfQKVeL+NSVIup8zU3zpUIrMaPbltPo7Zs1iJGFGKxzUvj+fkyffJ0ser9rxeJ8Rrlua",
-	"DLrhL0z8iE/ukYKYOaHWMOsvVXGYYP0oO56JbCegd6pgeuxMlE11FiUVIkrxlJrMMi4R7wtNECvV9+Cj",
-	"C/i9E7H5KUPgPPMDg2szsYE7kIgGM7pmkCHND/AKeYioOcZ+CqFY0/8tzqPaQPc4kXLeXuEH885+Cxgi",
-	"4BiSz0DEAH7lVGnEV6hb4WeOws//aqh80Tvys/2lC8gvLUtLmeMEb7QWSRznPCX5hiudvJ6/nsdE0BhX",
-	"j9U/AQAA//9yK7QlrCUAAA==",
+	"H4sIAAAAAAAC/+xa32/bNhD+VwhuwF7kyG2KodNb9wNDhgIx1r4VgcFIZ5utRKok1TQz9L8PJCVZqkmZ",
+	"sh0HG/qU2CSPx/u++3g8eItTXpScAVMSJ1tcEkEKUCDMpwVZg/6bgUwFLRXlDCf4/QZQSdaAWFXcg8AR",
+	"pvrrzxWIRxxhRgrACdYzcIRluoGCaCMrLgqicIIpUz+/whEuKKNFVeBkHmH1WIIdgrUx+XW25rPm28qu",
+	"qOvIePSO/uPxyjqE+AoJkFWuJCpBoMYTn5NLqe2Fefoi1NM6wgJkyZkEE8nfOFvlNFVuvwVIXokUEMkF",
+	"kOwRwVcqlcQR3gDJGjDe8pTYNduerz8KWOEE/xDvcIztqIy7FbVx6G/IqACXD2+QaMYoZ0hxpDaAVoIz",
+	"BSyzWD9QtTFfpwKIgqzz+axO1i0MNmg5kZKuqJ3wnshP+luS57crnHwYN7sAllG2dpiooy0uBS9BKGrB",
+	"yck95Eua6f9H4d3xUMDnigrIcPJht/yuYwe//6gDXd/VkeMUb/UCk20DN5rILokakDAjCmaKFjrSjXmp",
+	"BGVrXEc43OnI+tmbvrNSCq79PT4ENMMDK+1mUf9Q++FxBodKtR+bjCjDJKqgkIco5QS93ZsIQR7NZ65I",
+	"fvC8lfvAxp/WRtjBboWfk8kWcwYn03pqUAw9DUBun4YYQHEPmd7dfCJZRvVcki8Gs8Z8+KO10MNjF7I8",
+	"L5aUlZVyclSP8kq5h7/NyM7SYF3UP4ITNE8sPAnrSyiXPozst7B54yB9X6QdIbGX2KHtzaxoYMzlyw6b",
+	"vvjcPyqn7piIuGnybVQmS6nTvf7F0nlXCepybjTPTtfcp86DSZp+fM48jewHZN7BS8GL3xnuhjEBvfAV",
+	"4c37Y0h5SCsmFwryhOvW6qUjoGGKZZjkkK3DxLERlfshLXsjYTxpwNk7xH7G6q8oW3FzMKpyPfYOCsIU",
+	"TdE7YBK0Sn0BIW21/eJqrs3yEhgpKU7w9dX86qXOJKI2xrG4Gbv6KC2ca3BU7X+CkqYkvy2BvVncIFlC",
+	"2uGAzQ7C/H+T2em31uxf0gwPHigv53NDPVPzm81IWeaNrbj1Y1fSD2MwJFLj/fXV+/7AjBYlF5buRG1w",
+	"gtdUbar7q5QX8RrUJ8riT5TNmtVtDK6b18v+q8l9bDs7LnvJxaUjevbulYggBg+onf5t0BZcqkU3pkkK",
+	"Uv3Ks8eRYH2dPTw8zHTaziqRA0t5Bln4g2hYFNTD5FCignoPuheToAuivTvk7eOv3GXH9fzaZ7TzMu6e",
+	"nkN04i3N6sP8bmbv3qBr+gUYuvndxfHmBDfmaup1Mz5sbQfAcK9rABipGYY32mf5+J14d2IqnYCHPzJ1",
+	"hF/NX3maN75VKOMgEePKNiD20Npd9XWcDlR/qdryKiDZhkuRWTqSeB2ijks7BONBgXIOrENEYBrM3keY",
+	"jv/ZtcW5z2Vlxl+FHRAeu9BJoelipHPkl8MLuubdxHwIlDfHWSZJ3Uh+BKrgOTMk+k/q7LR2jY+kQUCO",
+	"KXOQhRNV2rAy7l7pbsE2Ffwp9AzT75vsbdMn/F+R9AJV4q4BEyTdT5kpvnSoysxo9vm0+hmzZnkgYQ5W",
+	"OKjtiB+TJ8+TJXcXffF42wiXLU1G3fAXJn7ET34jBTHzhFrDrD9XxWGC9b3seCKyTUBvqmB67Jwom/Io",
+	"SkpEpOQpNZllXCLeDk0QK+Vz8NEF/M6J2Py4InCe+cnDpZnYwB1IRIMZXTPIkOI9vEIaEZpj7KcQijXv",
+	"v+VxVBt5PZ5IOe9b4Tvzju4FjBHwEJJPQMQAfuVUKsRXqFvhZ47ET981lL7o7fnZ/vYGxJeWpZXIcYI3",
+	"SpVJHOc8JfmGS5W8nr+ex6SkMa7v6n8DAAD//9//XyU+JgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

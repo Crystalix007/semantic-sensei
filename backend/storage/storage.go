@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -140,18 +142,53 @@ func (d Database) DeleteProject(ctx context.Context, id int64) error {
 // the database and returns the ID of the newly created pending classification
 // task.
 func (d Database) CreatePendingClassificationTask(ctx context.Context, pct PendingClassificationTask) (int64, error) {
+	tx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"storage: error beginning transaction: %w",
+			err,
+		)
+	}
+
+	defer tx.Rollback()
+
+	id, err := d.insertPendingClassificationTask(ctx, tx, pct)
+	if err != nil {
+		return 0, err
+	}
+
+	embeddingSHA256 := sha256.Sum256([]byte(pct.LLMOutput))
+
+	if err := d.updateEmbeddings(ctx, tx, embeddingSHA256, pct.Embeddings); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf(
+			"storage: error committing pending classification task update: %w",
+			err,
+		)
+	}
+
+	return id, nil
+}
+
+func (d Database) insertPendingClassificationTask(
+	ctx context.Context,
+	tx *sql.Tx,
+	pct PendingClassificationTask,
+) (int64, error) {
 	var id int64
 
-	err := d.db.QueryRowContext(ctx, `
+	err := tx.QueryRowContext(ctx, `
 		INSERT INTO pending_classification_tasks (
 			project_id,
 			llm_input,
-			llm_output,
-			embedding
+			llm_output
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3)
 		RETURNING id
-	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput, pct.Embedding).Scan(&id)
+	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput).Scan(&id)
 
 	var pqErr *pq.Error
 
@@ -193,7 +230,7 @@ func (d Database) GetPendingClassificationTask(ctx context.Context, id int64) (*
 	var pct PendingClassificationTask
 
 	err := d.db.QueryRowContext(ctx, `
-		SELECT id, project_id, llm_input, llm_output, created_at, embedding
+		SELECT id, project_id, llm_input, llm_output, created_at
 		FROM pending_classification_tasks
 		WHERE id = $1
 	`, id).Scan(
@@ -202,11 +239,21 @@ func (d Database) GetPendingClassificationTask(ctx context.Context, id int64) (*
 		&pct.LLMInput,
 		&pct.LLMOutput,
 		&pct.CreatedAt,
-		&pct.Embedding,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"storage: error getting pending classification task: %w",
+			err,
+		)
+	}
+
+	embeddingSHA256 := sha256.Sum256([]byte(pct.LLMOutput))
+
+	pct.Embeddings, err = d.getEmbeddings(ctx, embeddingSHA256)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting embeddings for pending classification task %d: %w",
+			pct.ID,
 			err,
 		)
 	}
@@ -228,7 +275,6 @@ func (d Database) FindPendingClassificationTasksForProject(
 		"project_id",
 		"llm_input",
 		"llm_output",
-		"embedding",
 		"created_at",
 	).From(
 		"pending_classification_tasks",
@@ -266,7 +312,6 @@ func (d Database) FindPendingClassificationTasksForProject(
 			&pendingClassificationTask.ProjectID,
 			&pendingClassificationTask.LLMInput,
 			&pendingClassificationTask.LLMOutput,
-			&pendingClassificationTask.Embedding,
 			&pendingClassificationTask.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf(
@@ -321,14 +366,37 @@ func (d Database) FindPendingClassificationTaskCountForProject(
 // UpdatePendingClassificationTask updates the pending classification task with
 // the provided ID with the provided values.
 func (d Database) UpdatePendingClassificationTask(ctx context.Context, pct PendingClassificationTask) error {
-	_, err := d.db.ExecContext(ctx, `
+	tx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf(
+			"storage: error beginning transaction: %w",
+			err,
+		)
+	}
+
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
 		UPDATE pending_classification_tasks
-		SET project_id = $1, llm_input = $2, llm_output = $3, embedding = $4
+		SET project_id = $1, llm_input = $2, llm_output = $3
 		WHERE id = $5
-	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput, pct.Embedding, pct.ID)
+	`, pct.ProjectID, pct.LLMInput, pct.LLMOutput, pct.ID)
 	if err != nil {
 		return fmt.Errorf(
 			"storage: error updating pending classification task: %w",
+			err,
+		)
+	}
+
+	embeddingSHA256 := sha256.Sum256([]byte(pct.LLMOutput))
+
+	if err := d.updateEmbeddings(ctx, tx, embeddingSHA256, pct.Embeddings); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf(
+			"storage: error committing pending classification task update: %w",
 			err,
 		)
 	}
@@ -358,19 +426,56 @@ func (d Database) DeletePendingClassificationTask(ctx context.Context, id int64)
 // CreateClassificationTask creates a new classification task in the database
 // and returns the ID of the newly created classification task.
 func (d Database) CreateClassificationTask(ctx context.Context, ct ClassificationTask) (int64, error) {
+	tx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"storage: error beginning transaction: %w",
+			err,
+		)
+	}
+
+	defer tx.Rollback()
+
+	id, err := d.insertClassificationTask(ctx, tx, ct)
+	if err != nil {
+		return 0, err
+	}
+
+	embeddingSHA256 := sha256.Sum256([]byte(ct.LLMOutput))
+
+	if err := d.updateEmbeddings(ctx, tx, embeddingSHA256, ct.Embeddings); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf(
+			"storage: error committing classification task update: %w",
+			err,
+		)
+	}
+
+	return id, nil
+}
+
+// insertClassificationTask inserts a new classification task into the database.
+// It returns the ID of the newly inserted task and an error, if any.
+func (d Database) insertClassificationTask(
+	ctx context.Context,
+	tx *sql.Tx,
+	ct ClassificationTask,
+) (int64, error) {
 	var id int64
 
-	err := d.db.QueryRowContext(ctx, `
+	err := tx.QueryRowContext(ctx, `
 		INSERT INTO classification_tasks (
 			project_id,
 			llm_input,
 			llm_output,
-			embedding,
 			label_id
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
-	`, ct.ProjectID, ct.LLMInput, ct.LLMOutput, ct.Embedding, ct.LabelID).Scan(
+	`, ct.ProjectID, ct.LLMInput, ct.LLMOutput, ct.LabelID).Scan(
 		&id,
 	)
 
@@ -396,7 +501,6 @@ func (d Database) CreateClassificationTask(ctx context.Context, ct Classificatio
 		}
 
 		return existingID, fmt.Errorf("%w: %w", ErrExistingResource, pqErr)
-		return 0, fmt.Errorf("%w: %w", ErrExistingResource, pqErr)
 	}
 
 	if err != nil {
@@ -409,12 +513,85 @@ func (d Database) CreateClassificationTask(ctx context.Context, ct Classificatio
 	return id, nil
 }
 
+// updateEmbeddings inserts new embeddings into the database, updating any
+// conflicts.
+// It returns an error if there was a problem inserting the embeddings.
+func (d Database) updateEmbeddings(
+	ctx context.Context,
+	tx *sql.Tx,
+	sha256 [32]byte,
+	embeddings map[string][]byte,
+) error {
+	preparedStatement, err := d.db.PrepareContext(ctx, `
+		INSERT INTO embeddings (sha256, model, embedding)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (sha256, model)
+		DO UPDATE SET embedding = EXCLUDED.embedding
+`)
+	if err != nil {
+		return fmt.Errorf(
+			"storage: error preparing embedding insert statement: %w",
+			err,
+		)
+	}
+
+	stmt := tx.StmtContext(ctx, preparedStatement)
+
+	for model, embedding := range embeddings {
+		_, err := stmt.ExecContext(ctx, sha256[:], model, embedding)
+		if err != nil {
+			return fmt.Errorf(
+				"storage: error inserting new embedding: %w",
+				err,
+			)
+		}
+	}
+
+	return nil
+}
+
+// getEmbeddings returns the embeddings for the given sha256 hash.
+// It returns a map of model names to embeddings and an error, if any.
+func (d Database) getEmbeddings(ctx context.Context, sha256 [32]byte) (map[string][]byte, error) {
+	rows, err := d.db.QueryContext(ctx, `
+		SELECT model, embedding
+		FROM embeddings
+		WHERE sha256 = $1
+	`, sha256[:])
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting embeddings: %w",
+			err,
+		)
+	}
+
+	defer rows.Close()
+
+	embeddings := make(map[string][]byte)
+
+	for rows.Next() {
+		var model string
+		var embedding []byte
+
+		if err := rows.Scan(&model, &embedding); err != nil {
+			return nil, fmt.Errorf(
+				"storage: error scanning embedding row: %w",
+				err,
+			)
+		}
+
+		embeddings[model] = embedding
+	}
+
+	return embeddings, nil
+}
+
 // GetClassificationTask returns the classification task with the provided ID.
 func (d Database) GetClassificationTask(ctx context.Context, id int64) (*ClassificationTask, error) {
 	var ct ClassificationTask
 
 	err := d.db.QueryRowContext(ctx, `
-		SELECT id, project_id, llm_input, llm_output, created_at, embedding, label_id
+		SELECT id, project_id, llm_input, llm_output, created_at, label_id
 		FROM classification_tasks
 		WHERE id = $1
 	`, id).Scan(
@@ -423,12 +600,22 @@ func (d Database) GetClassificationTask(ctx context.Context, id int64) (*Classif
 		&ct.LLMInput,
 		&ct.LLMOutput,
 		&ct.CreatedAt,
-		&ct.Embedding,
 		&ct.LabelID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"storage: error getting classification task: %w",
+			err,
+		)
+	}
+
+	embeddingSHA256 := sha256.Sum256([]byte(ct.LLMOutput))
+
+	ct.Embeddings, err = d.getEmbeddings(ctx, embeddingSHA256)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"storage: error getting embeddings for classification task %d: %w",
+			ct.ID,
 			err,
 		)
 	}
@@ -450,7 +637,6 @@ func (d Database) FindClassificationTasksForProject(
 		"project_id",
 		"llm_input",
 		"llm_output",
-		"embedding",
 		"label_id",
 		"created_at",
 	).From(
@@ -489,12 +675,23 @@ func (d Database) FindClassificationTasksForProject(
 			&classificationTask.ProjectID,
 			&classificationTask.LLMInput,
 			&classificationTask.LLMOutput,
-			&classificationTask.Embedding,
 			&classificationTask.LabelID,
 			&classificationTask.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf(
 				"storage: error scanning classification task: %w",
+				err,
+			)
+		}
+
+		embeddingSHA256 := sha256.Sum256([]byte(classificationTask.LLMOutput))
+
+		classificationTask.Embeddings, err = d.getEmbeddings(ctx, embeddingSHA256)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"storage: error getting embeddings for project %d classification task %d: %w",
+				projectID,
+				classificationTask.ID,
 				err,
 			)
 		}
@@ -508,14 +705,37 @@ func (d Database) FindClassificationTasksForProject(
 // UpdateClassificationTask updates the classification task with the provided ID
 // with the provided values.
 func (d Database) UpdateClassificationTask(ctx context.Context, ct ClassificationTask) error {
-	_, err := d.db.ExecContext(ctx, `
+	tx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf(
+			"storage: error beginning transaction: %w",
+			err,
+		)
+	}
+
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
 		UPDATE classification_tasks
-		SET project_id = $1, llm_input = $2, llm_output = $3, embedding = $4, label_id = $5
+		SET project_id = $1, llm_input = $2, llm_output = $3, label_id = $5
 		WHERE id = $6
-	`, ct.ProjectID, ct.LLMInput, ct.LLMOutput, ct.Embedding, ct.LabelID, ct.ID)
+	`, ct.ProjectID, ct.LLMInput, ct.LLMOutput, ct.LabelID, ct.ID)
 	if err != nil {
 		return fmt.Errorf(
 			"storage: error updating classification task: %w",
+			err,
+		)
+	}
+
+	embeddingSHA256 := sha256.Sum256([]byte(ct.LLMOutput))
+
+	if err := d.updateEmbeddings(ctx, tx, embeddingSHA256, ct.Embeddings); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf(
+			"storage: error committing classification task update: %w",
 			err,
 		)
 	}

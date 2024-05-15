@@ -337,13 +337,14 @@ components:
           type: string
         llm_output:
           type: string
-        embedding:
-          type: string
-          format: binary
+        embeddings:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Embedding"
       required:
         - llm_input
         - llm_output
-        - embedding
+        - embeddings
 
     ClassificationTask:
       allOf:
@@ -375,6 +376,10 @@ components:
         - data
         - total
 
+    Embedding:
+      type: string
+      format: byte
+
     LabelTask:
       type: object
       properties:
@@ -401,9 +406,10 @@ components:
           type: string
         llm_output:
           type: string
-        embedding:
-          type: string
-          format: byte
+        embeddings:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Embedding"
         created_at:
           type: string
           format: date-time
@@ -412,7 +418,7 @@ components:
         - project_id
         - llm_input
         - llm_output
-        - embedding
+        - embeddings
         - created_at
 
     PendingClassificationTaskList:

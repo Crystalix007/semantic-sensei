@@ -32,12 +32,12 @@ func (a API) GetProjectProjectIdClassificationTaskId(
 		var b openapi.ClassificationTaskOrPendingClassificationTask
 
 		if err := b.FromPendingClassificationTask(openapi.PendingClassificationTask{
-			CreatedAt: pendingTask.CreatedAt,
-			Embedding: pendingTask.Embedding,
-			Id:        pendingTask.ID,
-			LlmInput:  pendingTask.LLMInput,
-			LlmOutput: pendingTask.LLMOutput,
-			ProjectId: pendingTask.ProjectID,
+			CreatedAt:  pendingTask.CreatedAt,
+			Embeddings: pendingTask.Embeddings,
+			Id:         pendingTask.ID,
+			LlmInput:   pendingTask.LLMInput,
+			LlmOutput:  pendingTask.LLMOutput,
+			ProjectId:  pendingTask.ProjectID,
 		}); err != nil {
 			return nil, fmt.Errorf(
 				"api: error encoding pending classification task in response: %w",
@@ -64,13 +64,13 @@ func (a API) GetProjectProjectIdClassificationTaskId(
 	var b openapi.ClassificationTaskOrPendingClassificationTask
 
 	if err := b.FromClassificationTask(openapi.ClassificationTask{
-		CreatedAt: task.CreatedAt,
-		Embedding: task.Embedding,
-		Id:        task.ID,
-		LabelId:   task.LabelID,
-		LlmInput:  task.LLMInput,
-		LlmOutput: task.LLMOutput,
-		ProjectId: task.ProjectID,
+		CreatedAt:  task.CreatedAt,
+		Embeddings: task.Embeddings,
+		Id:         task.ID,
+		LabelId:    task.LabelID,
+		LlmInput:   task.LLMInput,
+		LlmOutput:  task.LLMOutput,
+		ProjectId:  task.ProjectID,
 	}); err != nil {
 		return nil, fmt.Errorf(
 			"api: error encoding classification task in response: %w",
@@ -90,36 +90,20 @@ func (a API) PostProjectProjectIdClassificationTask(
 	var pendingClassificationTask storage.PendingClassificationTask
 
 	if params.JSONBody != nil {
-		embedding, err := params.JSONBody.Embedding.Bytes()
-		if err != nil {
-			return nil, fmt.Errorf(
-				"api: error reading embedding: %w",
-				err,
-			)
-		}
-
 		pendingClassificationTask = storage.PendingClassificationTask{
-			ProjectID: params.ProjectId,
-			LLMInput:  params.JSONBody.LlmInput,
-			LLMOutput: params.JSONBody.LlmOutput,
-			Embedding: embedding,
+			ProjectID:  params.ProjectId,
+			LLMInput:   params.JSONBody.LlmInput,
+			LLMOutput:  params.JSONBody.LlmOutput,
+			Embeddings: params.JSONBody.Embeddings,
 		}
 	}
 
 	if params.FormdataBody != nil {
-		embedding, err := params.FormdataBody.Embedding.Bytes()
-		if err != nil {
-			return nil, fmt.Errorf(
-				"api: error reading embedding: %w",
-				err,
-			)
-		}
-
 		pendingClassificationTask = storage.PendingClassificationTask{
-			ProjectID: params.ProjectId,
-			LLMInput:  params.FormdataBody.LlmInput,
-			LLMOutput: params.FormdataBody.LlmOutput,
-			Embedding: embedding,
+			ProjectID:  params.ProjectId,
+			LLMInput:   params.FormdataBody.LlmInput,
+			LLMOutput:  params.FormdataBody.LlmOutput,
+			Embeddings: params.FormdataBody.Embeddings,
 		}
 	}
 
@@ -154,12 +138,12 @@ func (a API) PostProjectProjectIdClassificationTask(
 	}
 
 	return openapi.PostProjectProjectIdClassificationTask201JSONResponse{
-		CreatedAt: task.CreatedAt,
-		Embedding: task.Embedding,
-		Id:        taskID,
-		LlmInput:  task.LLMInput,
-		LlmOutput: task.LLMOutput,
-		ProjectId: task.ProjectID,
+		CreatedAt:  task.CreatedAt,
+		Embeddings: task.Embeddings,
+		Id:         taskID,
+		LlmInput:   task.LLMInput,
+		LlmOutput:  task.LLMOutput,
+		ProjectId:  task.ProjectID,
 	}, nil
 }
 
@@ -182,15 +166,17 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 	}
 
 	classificationTask := storage.ClassificationTask{
-		ProjectID: pendingTask.ProjectID,
-		LLMInput:  pendingTask.LLMInput,
-		LLMOutput: pendingTask.LLMOutput,
-		Embedding: pendingTask.Embedding,
-		LabelID:   request.Body.Label,
+		ProjectID:  pendingTask.ProjectID,
+		LLMInput:   pendingTask.LLMInput,
+		LLMOutput:  pendingTask.LLMOutput,
+		Embeddings: pendingTask.Embeddings,
+		LabelID:    request.Body.Label,
 	}
+
+	id, err := a.db.CreateClassificationTask(ctx, classificationTask)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"api: error updating classification task: %w",
+			"api: error creating classification task: %w",
 			err,
 		)
 	}
@@ -218,17 +204,17 @@ func (a *API) PostProjectProjectIdClassificationTaskIdLabel(
 			return redirect.To(fmt.Sprintf("/project/%d/label_batch", request.ProjectId))
 		}
 
-		return redirect.To(fmt.Sprintf("/project/%d/task/%d", request.ProjectId, request.Id))
+		return redirect.To(fmt.Sprintf("/project/%d/task/%d", request.ProjectId, id))
 	}
 
 	return openapi.PostProjectProjectIdClassificationTaskIdLabel200JSONResponse{
-		CreatedAt: classificationTask.CreatedAt,
-		Embedding: classificationTask.Embedding,
-		Id:        classificationTask.ID,
-		LabelId:   classificationTask.LabelID,
-		LlmInput:  classificationTask.LLMInput,
-		LlmOutput: classificationTask.LLMOutput,
-		ProjectId: classificationTask.ProjectID,
+		CreatedAt:  classificationTask.CreatedAt,
+		Embeddings: classificationTask.Embeddings,
+		Id:         classificationTask.ID,
+		LabelId:    classificationTask.LabelID,
+		LlmInput:   classificationTask.LLMInput,
+		LlmOutput:  classificationTask.LLMOutput,
+		ProjectId:  classificationTask.ProjectID,
 	}, nil
 }
 
@@ -267,13 +253,13 @@ func (a *API) GetProjectProjectIdClassificationTasks(
 
 	for i, task := range tasks {
 		projectTasks[i] = openapi.ClassificationTask{
-			CreatedAt: task.CreatedAt,
-			Embedding: task.Embedding,
-			Id:        task.ID,
-			LabelId:   task.LabelID,
-			LlmInput:  task.LLMInput,
-			LlmOutput: task.LLMOutput,
-			ProjectId: task.ProjectID,
+			CreatedAt:  task.CreatedAt,
+			Embeddings: task.Embeddings,
+			Id:         task.ID,
+			LabelId:    task.LabelID,
+			LlmInput:   task.LLMInput,
+			LlmOutput:  task.LLMOutput,
+			ProjectId:  task.ProjectID,
 		}
 	}
 
@@ -313,12 +299,12 @@ func (a *API) GetProjectProjectIdPendingClassificationTasks(
 
 	for i, task := range tasks {
 		projectTasks[i] = openapi.PendingClassificationTask{
-			CreatedAt: task.CreatedAt,
-			Embedding: task.Embedding,
-			Id:        task.ID,
-			LlmInput:  task.LLMInput,
-			LlmOutput: task.LLMOutput,
-			ProjectId: task.ProjectID,
+			CreatedAt:  task.CreatedAt,
+			Embeddings: task.Embeddings,
+			Id:         task.ID,
+			LlmInput:   task.LLMInput,
+			LlmOutput:  task.LLMOutput,
+			ProjectId:  task.ProjectID,
 		}
 	}
 
