@@ -28,7 +28,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - exec pg_isready -U "$POSTGRES_USER" -h 127.0.0.1 -p 5432
+                - exec pg_isready -U "$POSTGRES_USER" -h 127.0.0.1 -p 5432 -d "$POSTGRES_DB"
           readinessProbe:
             exec:
               command:
@@ -36,5 +36,5 @@ spec:
                 - -c
                 - -e
                 - |
-                  exec pg_isready -U "$POSTGRES_USER" -h 127.0.0.1 -p 5432
+                  exec pg_isready -U "$POSTGRES_USER" -h 127.0.0.1 -p 5432 -d "$POSTGRES_DB"
                   [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
